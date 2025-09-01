@@ -1,12 +1,36 @@
-import React from 'react'
-import logo from "./assets/logo.png"
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import { checkAuth } from "./services/authService";
+import Loader from "./components/Loader";
 
 const App = () => {
-  return (
-    <div className=' bg-yellow-300 h-screen w-screen'>
-      <img src={logo} alt="" className='' />
-    </div>
-  )
-}
+  const dispatch = useDispatch();
+  const { globalLoading } = useSelector((state) => state.user);
 
-export default App; 
+  useEffect(() => {
+    dispatch(checkAuth());
+  }, [dispatch]);
+
+  return (
+    <Router>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1">
+          {globalLoading && <Loader />}
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
