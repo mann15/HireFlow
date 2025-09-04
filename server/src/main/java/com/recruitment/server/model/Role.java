@@ -1,19 +1,26 @@
 package com.recruitment.server.model;
 
 import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "roles")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer roleId;
 
-    @Column(nullable = false, unique = true)
-    private String name;
+    @Column(unique = true, nullable = false, length = 50)
+    private String roleName;
 
-    // Getters and Setters
+    @Builder.Default
+    @Column(updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 }
-
-
