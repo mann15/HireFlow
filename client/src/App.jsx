@@ -1,5 +1,11 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -10,7 +16,8 @@ import Loader from "./components/Loader";
 
 const App = () => {
   const dispatch = useDispatch();
-  const { globalLoading } = useSelector((state) => state.user);
+  const { globalLoading, error } = useSelector((state) => state.user);
+
 
   useEffect(() => {
     dispatch(checkAuth());

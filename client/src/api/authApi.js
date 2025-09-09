@@ -10,8 +10,7 @@ export const signupApi = async (userData) => {
   return response.data;
 };
 
-
 export const verifyTokenApi = async () => {
-  const response = await api.get("/auth/verify-token");
+  const response = await api.get("/auth/me");
   return response.data;
 };

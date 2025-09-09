@@ -8,21 +8,19 @@ import {
   logout as logoutAction,
   setGlobalLoading,
 } from "../redux/userSlice";
-import { loginApi, signupApi,verifyTokenApi } from "../api/authApi";
+import { loginApi, signupApi, verifyTokenApi } from "../api/authApi";
+import api from "../api/axios";
 
 // Login service
 export const login = (credentials) => async (dispatch) => {
   try {
     dispatch(loginStart());
-    // Show global loader
+
     dispatch(setGlobalLoading(true));
 
     const data = await loginApi(credentials);
 
-    // Save token to localStorage
-    localStorage.setItem("token", data.token);
-
-    dispatch(loginSuccess(data.user));
+    dispatch(loginSuccess(data));
     return { success: true };
   } catch (error) {
     const message =
@@ -30,7 +28,6 @@ export const login = (credentials) => async (dispatch) => {
     dispatch(loginFailure(message));
     return { success: false, message };
   } finally {
-    // Hide global loader
     dispatch(setGlobalLoading(false));
   }
 };
@@ -39,15 +36,11 @@ export const login = (credentials) => async (dispatch) => {
 export const signup = (userData) => async (dispatch) => {
   try {
     dispatch(signupStart());
-    // Show global loader
     dispatch(setGlobalLoading(true));
 
     const data = await signupApi(userData);
 
-    // Save token to localStorage
-    localStorage.setItem("token", data.token);
-
-    dispatch(signupSuccess(data.user));
+    dispatch(signupSuccess(data));
     return { success: true };
   } catch (error) {
     const message =
@@ -55,23 +48,18 @@ export const signup = (userData) => async (dispatch) => {
     dispatch(signupFailure(message));
     return { success: false, message };
   } finally {
-    // Hide global loader
     dispatch(setGlobalLoading(false));
   }
 };
 
 // Verify token and auto-login
 export const checkAuth = () => async (dispatch) => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-
   try {
     dispatch(loginStart());
     dispatch(setGlobalLoading(true));
     const data = await verifyTokenApi();
-    dispatch(loginSuccess(data.user));
+    dispatch(loginSuccess(data));
   } catch (error) {
-    localStorage.removeItem("token");
     dispatch(loginFailure(null));
   } finally {
     dispatch(setGlobalLoading(false));
@@ -79,7 +67,11 @@ export const checkAuth = () => async (dispatch) => {
 };
 
 // Logout service
-export const logout = () => (dispatch) => {
-  localStorage.removeItem("token");
+export const logout = () => async (dispatch) => {
+  try {
+    await api.post("/auth/logout");
+  } catch (e) {
+    console.error("Logout failed:", e);
+  }
   dispatch(logoutAction());
 };

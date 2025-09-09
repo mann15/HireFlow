@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import logo from "/logo.png";
@@ -8,17 +8,30 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
   const { currentUser, isAuthenticated } = useSelector((state) => state.user);
 
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    if (currentUser?.name) {
+      const formattedName =
+        currentUser.name.charAt(0).toUpperCase() + currentUser.name.slice(1);
+      setUserName(formattedName);
+    } else {
+      setUserName("User");
+    }
+  }, [currentUser]); 
+
   return (
-    <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)]  shadow-md h-20">
+    <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)] shadow-md h-20">
       <div className="container mx-auto flex justify-between items-center h-full">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-2/5 overflow-hidden rounded-lg flex items-center justify-center">
             <img
               src={logo}
               alt="HireFlow Logo"
-              className=" object-cover object-center scale-110"
+              className="object-cover object-center scale-110"
             />
           </div>
         </Link>
@@ -27,9 +40,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <>
               <div className="flex items-center mr-4">
-                <span className="font-medium">
-                  Hi, {currentUser?.name || "User"}
-                </span>
+                <span className="font-medium">Hi, {userName}</span>
               </div>
               <button
                 onClick={() => {
