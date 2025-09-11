@@ -3,24 +3,24 @@ package com.recruitment.server.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
 @Entity
-@Table(name = "roles")
+@Table(name = "proficiency_levels")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Role {
+public class ProficiencyLevels {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long roleId;
+    private Long levelId;
 
     @Column(unique = true, nullable = false, length = 50)
-    private String roleName;
+    private String levelName;
 
-    @Builder.Default
-    @Column(updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(length = 255)
+    private String description;
+
+    @Column(nullable = false)
+    private Integer rank;
 }
