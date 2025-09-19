@@ -24,7 +24,7 @@ const Navbar = () => {
   }, [currentUser]); 
 
   return (
-    <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)] shadow-md h-20">
+    <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)] shadow-md h-20 overflow-hidden z-50">
       <div className="container mx-auto flex justify-between items-center h-full">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-2/5 overflow-hidden rounded-lg flex items-center justify-center">

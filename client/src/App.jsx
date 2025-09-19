@@ -11,13 +11,24 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import PositionsList from "./pages/positions/PositionsList";
+import AddPosition from "./pages/positions/AddPosition";
+import PositionDetails from "./pages/positions/PositionDetails";
+import EditPosition from "./pages/positions/EditPosition";
+import PositionApplications from "./pages/positions/PositionApplications";
+import PositionAnalytics from "./pages/positions/PositionAnalytics";
 import { checkAuth } from "./services/authService";
+import AdminDashboard from "./pages/dashboards/AdminDashboard";
+import RecruiterDashboard from "./pages/dashboards/RecruiterDashboard";
+import HRDashboard from "./pages/dashboards/HRDashboard";
+import InterviewerDashboard from "./pages/dashboards/InterviewerDashboard";
+import ReviewerDashboard from "./pages/dashboards/ReviewerDashboard";
+import ViewerDashboard from "./pages/dashboards/ViewerDashboard";
 import Loader from "./components/Loader";
 
 const App = () => {
   const dispatch = useDispatch();
   const { globalLoading, error } = useSelector((state) => state.user);
-
 
   useEffect(() => {
     dispatch(checkAuth());
@@ -33,6 +44,32 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+
+            <Route path="/positions" element={<PositionsList />} />
+            <Route path="/positions/add" element={<AddPosition />} />
+            <Route path="/positions/:id" element={<PositionDetails />} />
+            <Route path="/positions/:id/edit" element={<EditPosition />} />
+            <Route
+              path="/positions/:id/applications"
+              element={<PositionApplications />}
+            />
+            <Route
+              path="/positions/:id/analytics"
+              element={<PositionAnalytics />}
+            />
+
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route
+              path="/recruiter/dashboard"
+              element={<RecruiterDashboard />}
+            />
+            <Route path="/hr/dashboard" element={<HRDashboard />} />
+            <Route
+              path="/interviewer/dashboard"
+              element={<InterviewerDashboard />}
+            />
+            <Route path="/reviewer/dashboard" element={<ReviewerDashboard />} />
+            <Route path="/viewer/dashboard" element={<ViewerDashboard />} />
           </Routes>
         </div>
       </div>
