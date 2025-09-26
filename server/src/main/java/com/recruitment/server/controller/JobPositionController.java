@@ -2,6 +2,7 @@ package com.recruitment.server.controller;
 
 import com.recruitment.server.model.JobPosition;
 import com.recruitment.server.repository.JobRepository;
+import com.recruitment.server.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -16,9 +17,11 @@ import java.util.stream.Collectors;
 public class JobPositionController {
 
     private final JobRepository jobRepository;
+    private final UserRepository userRepository;
 
-    public JobPositionController(JobRepository jobRepository) {
+    public JobPositionController(JobRepository jobRepository, UserRepository userRepository) {
         this.jobRepository = jobRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -36,6 +39,12 @@ public class JobPositionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
     public ResponseEntity<JobPosition> createPosition(@RequestBody JobPosition jobPosition,
             Authentication authentication) {
+        // Set the creating user based on authenticated principal
+        if (authentication != null && authentication.isAuthenticated()) {
+            String email = authentication.getName();
+            userRepository.findByEmail(email).ifPresent(jobPosition::setCreatedBy);
+        }
+
         JobPosition saved = jobRepository.save(jobPosition);
         return ResponseEntity.ok(saved);
     }
@@ -96,7 +105,7 @@ public class JobPositionController {
     public ResponseEntity<List<JobPosition>> getMyPositions(Authentication authentication) {
         String username = authentication.getName();
         List<JobPosition> myPositions = jobRepository.findAll().stream()
-                .filter(j -> username.equals(j.getCreatedBy()))
+                .filter(j -> j.getCreatedBy() != null && username.equals(j.getCreatedBy().getEmail()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(myPositions);
     }

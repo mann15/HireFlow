@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,7 +48,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user, HttpServletResponse response) {
+    public ResponseEntity<?> register(@RequestBody User user, HttpServletRequest request,
+            HttpServletResponse response) {
         if (userRepo.findByEmail(user.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("Email already in use");
         }
@@ -68,19 +70,19 @@ public class AuthController {
         String token = jwtUtil.generateToken(userDetails);
         long expiresAt = jwtUtil.getExpirationDateFromToken(token).getTime();
 
-        response.addCookie(createJwtCookie(token, expiresAt));
+        response.addCookie(createJwtCookie(token, expiresAt, request.isSecure()));
 
         AuthResponse authResponse = new AuthResponse(
                 user.getFirstName() + " " + user.getLastName(),
                 user.getEmail(),
                 role.getRoleName(),
-                user.getUserId()
-        );
+                user.getUserId());
         return ResponseEntity.ok(authResponse);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthRequest loginRequest, HttpServletResponse response) {
+    public ResponseEntity<?> login(@RequestBody AuthRequest loginRequest, HttpServletRequest request,
+            HttpServletResponse response) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
@@ -92,7 +94,7 @@ public class AuthController {
             String token = jwtUtil.generateToken(userDetails);
             long expiresAt = jwtUtil.getExpirationDateFromToken(token).getTime();
 
-            response.addCookie(createJwtCookie(token, expiresAt));
+            response.addCookie(createJwtCookie(token, expiresAt, request.isSecure()));
 
             return ResponseEntity.ok(new AuthResponse(
                     user.getFirstName() + " " + user.getLastName(),
@@ -128,10 +130,10 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(HttpServletResponse response) {
+    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         Cookie cookie = new Cookie("token", null);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(request.isSecure());
         cookie.setPath("/");
         cookie.setMaxAge(0);
         cookie.setAttribute("SameSite", "Strict");
@@ -140,10 +142,31 @@ public class AuthController {
         return ResponseEntity.ok("Logged out successfully");
     }
 
-    private Cookie createJwtCookie(String token, long expiresAt) {
+    @GetMapping("/check")
+    public ResponseEntity<?> checkAuth(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+
+        String email = authentication.getName();
+        User user = userRepo.findByEmail(email).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+
+        AuthResponse authResponse = new AuthResponse(
+                user.getFirstName() + " " + user.getLastName(),
+                user.getEmail(),
+                user.getRole().getRoleName(),
+                user.getUserId());
+
+        return ResponseEntity.ok(authResponse);
+    }
+
+    private Cookie createJwtCookie(String token, long expiresAt, boolean secure) {
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(secure);
         cookie.setPath("/");
         cookie.setMaxAge((int) ((expiresAt - System.currentTimeMillis()) / 1000));
         cookie.setAttribute("SameSite", "Strict");

@@ -55,6 +55,7 @@ export const signup = (userData) => async (dispatch) => {
 // Verify token and auto-login
 export const checkAuth = () => async (dispatch) => {
   try {
+    console.log("Checking auth...");
     dispatch(loginStart());
     dispatch(setGlobalLoading(true));
     const data = await verifyTokenApi();

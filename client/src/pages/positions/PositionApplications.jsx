@@ -14,7 +14,7 @@ const PositionApplications = () => {
   }, [id]);
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 mt-20">
       <h2 className="text-2xl font-bold mb-4">Applications for Position</h2>
       {applications.length === 0 ? (
         <div className="text-gray-500">No applications found.</div>

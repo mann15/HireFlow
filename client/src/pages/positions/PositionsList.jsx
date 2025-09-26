@@ -31,7 +31,7 @@ const PositionsList = () => {
   });
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 mt-20">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold">All Positions</h2>
         <Link

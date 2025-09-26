@@ -28,7 +28,7 @@ const PositionDetails = () => {
   if (!position) return <div className="container p-6">Loading...</div>;
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-6 mt-20">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h2 className="text-2xl font-bold">{position.jobTitle}</h2>
