@@ -21,7 +21,71 @@ const Navbar = () => {
     } else {
       setUserName("User");
     }
-  }, [currentUser]); 
+  }, [currentUser]);
+
+  // Get role-based navigation items
+  const getNavigationItems = () => {
+    if (!isAuthenticated || !currentUser) return [];
+
+    const role = currentUser.role?.toUpperCase();
+
+    switch (role) {
+      case "ADMIN":
+        return [
+          { name: "Dashboard", path: "/admin/dashboard" },
+          { name: "Positions", path: "/positions" },
+          { name: "Candidates", path: "/candidates" },
+          { name: "Users", path: "/users" },
+          { name: "Analytics", path: "/analytics" },
+        ];
+
+      case "RECRUITER":
+        return [
+          { name: "Dashboard", path: "/recruiter/dashboard" },
+          { name: "Positions", path: "/positions" },
+          { name: "Candidates", path: "/candidates" },
+          { name: "Applications", path: "/applications" },
+        ];
+
+      case "HR":
+        return [
+          { name: "Dashboard", path: "/hr/dashboard" },
+          { name: "Positions", path: "/positions" },
+          { name: "Candidates", path: "/candidates" },
+          { name: "Interviews", path: "/interviews" },
+          { name: "Offers", path: "/offers" },
+        ];
+
+      case "INTERVIEWER":
+        return [
+          { name: "Dashboard", path: "/interviewer/dashboard" },
+          { name: "Interviews", path: "/interviews" },
+          { name: "Candidates", path: "/candidates" },
+        ];
+
+      case "REVIEWER":
+        return [
+          { name: "Dashboard", path: "/reviewer/dashboard" },
+          { name: "Applications", path: "/applications" },
+          { name: "Candidates", path: "/candidates" },
+        ];
+
+      case "VIEWER":
+        return [
+          { name: "Dashboard", path: "/viewer/dashboard" },
+          { name: "Positions", path: "/positions" },
+          { name: "Candidates", path: "/candidates" },
+        ];
+
+      default:
+        return [
+          { name: "Positions", path: "/positions" },
+          { name: "Candidates", path: "/candidates" },
+        ];
+    }
+  };
+
+  const navigationItems = getNavigationItems();
 
   return (
     <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)] shadow-md h-20 overflow-hidden z-50">
@@ -36,11 +100,35 @@ const Navbar = () => {
           </div>
         </Link>
 
+        {/* Navigation Items */}
+        {isAuthenticated && navigationItems.length > 0 && (
+          <div className="hidden md:flex space-x-6">
+            {navigationItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${
+                  location.pathname === item.path
+                    ? "bg-[var(--primary-color)] text-white"
+                    : "text-[var(--secondary-color)] hover:bg-gray-100 hover:text-gray-900"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
         <div className="flex space-x-4">
           {isAuthenticated ? (
             <>
               <div className="flex items-center mr-4">
                 <span className="font-medium">Hi, {userName}</span>
+                {currentUser?.role && (
+                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {currentUser.role}
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => {

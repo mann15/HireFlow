@@ -1,6 +1,7 @@
 package com.recruitment.server.model;
 
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +14,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class CandidateInterview {
 
     @Id
@@ -54,14 +56,13 @@ public class CandidateInterview {
 
     @Column(nullable = false)
     @Builder.Default
-    private InterviewStatus status= InterviewStatus.SCHEDULED;
+    private InterviewStatus status = InterviewStatus.SCHEDULED;
 
     private LocalDateTime scheduledAt;
     private LocalDateTime completedAt;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="scheduled_by", nullable = false)
+    @JoinColumn(name = "scheduled_by", nullable = false)
     private User user;
 
 }

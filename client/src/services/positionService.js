@@ -49,12 +49,12 @@ export const closePosition = async (id, payload) => {
 };
 
 export const addPositionSkills = async (id, skills) => {
-  const res = await api.post(`${BASE}/${id}/skills`, { skills });
+  const res = await api.post(`${BASE}/${id}/skills`, skills);
   return res.data;
 };
 
 export const updatePositionSkills = async (id, skills) => {
-  const res = await api.put(`${BASE}/${id}/skills`, { skills });
+  const res = await api.put(`${BASE}/${id}/skills`, skills);
   return res.data;
 };
 

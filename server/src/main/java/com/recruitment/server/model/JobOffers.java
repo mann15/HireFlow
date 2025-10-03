@@ -1,6 +1,7 @@
 package com.recruitment.server.model;
 
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,55 +15,55 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class JobOffers {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id", nullable = false)
-    private JobApplication application;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "application_id", nullable = false)
+  private JobApplication application;
 
-    @Column(precision = 10, scale = 2)
-    private BigDecimal salaryOffered;
+  @Column(precision = 10, scale = 2)
+  private BigDecimal salaryOffered;
 
-    @Column(length = 100)
-    private String offeredDesignation;
+  @Column(length = 100)
+  private String offeredDesignation;
 
-    @Column
-    private LocalDate joiningDate;
+  @Column
+  private LocalDate joiningDate;
 
-    @Column(nullable = false)
-    private String offerLetterUrl;
+  @Column(nullable = false)
+  private String offerLetterUrl;
 
-    public enum OfferStatus {
-        GENERATED,
-      SEND,
-      ACCEPTED,
-      REJECTED,
-      WITHDRAWN,
-      EXPIRED
-    }
-    
-    @Column(nullable = false)
-    @Builder.Default
-    private OfferStatus status= OfferStatus.GENERATED;
+  public enum OfferStatus {
+    GENERATED,
+    SEND,
+    ACCEPTED,
+    REJECTED,
+    WITHDRAWN,
+    EXPIRED
+  }
 
-    @Column(nullable = false)
-    private LocalDate offerValidTill;
+  @Column(nullable = false)
+  @Builder.Default
+  private OfferStatus status = OfferStatus.GENERATED;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private User createdBy;
+  @Column(nullable = false)
+  private LocalDate offerValidTill;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "created_by", nullable = false)
+  private User createdBy;
 
-    private String rejectionReason;
+  private String rejectionReason;
 
-    @Column(nullable = false)
-    private java.time.LocalDateTime createdAt;
+  @Column(nullable = false)
+  private java.time.LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private java.time.LocalDateTime updatedAt;
-    
+  @Column(nullable = false)
+  private java.time.LocalDateTime updatedAt;
+
 }

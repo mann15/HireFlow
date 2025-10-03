@@ -17,6 +17,12 @@ import PositionDetails from "./pages/positions/PositionDetails";
 import EditPosition from "./pages/positions/EditPosition";
 import PositionApplications from "./pages/positions/PositionApplications";
 import PositionAnalytics from "./pages/positions/PositionAnalytics";
+
+// Candidate Pages
+import CandidatesList from "./pages/candidates/CandidatesList";
+import AddCandidate from "./pages/candidates/AddCandidate";
+import CandidateDetails from "./pages/candidates/CandidateDetails";
+
 import { checkAuth } from "./services/authService";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
 import RecruiterDashboard from "./pages/dashboards/RecruiterDashboard";
@@ -56,6 +62,18 @@ const App = () => {
             <Route
               path="/positions/:id/analytics"
               element={<PositionAnalytics />}
+            />
+
+            {/* Candidate Routes */}
+            <Route path="/candidates" element={<CandidatesList />} />
+            <Route path="/candidates/add" element={<AddCandidate />} />
+            <Route
+              path="/candidates/:candidateId"
+              element={<CandidateDetails />}
+            />
+            <Route
+              path="/candidates/:candidateId/edit"
+              element={<AddCandidate />}
             />
 
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

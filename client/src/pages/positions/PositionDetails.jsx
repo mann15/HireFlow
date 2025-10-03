@@ -78,12 +78,9 @@ const PositionDetails = () => {
                     </div>
                     <div className="text-sm text-gray-600">{a.status}</div>
                   </div>
-                  <Link
-                    to={`/applications/${a.applicationId}`}
-                    className="text-sm text-blue-600"
-                  >
-                    View
-                  </Link>
+                  <span className="text-sm text-gray-500">
+                    Application #{a.applicationId}
+                  </span>
                 </div>
               </li>
             ))}

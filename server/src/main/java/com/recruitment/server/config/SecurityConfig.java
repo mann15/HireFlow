@@ -59,8 +59,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         // Allow public GET access to positions (list/details) while protecting write
-                        // operations
-                        .requestMatchers(HttpMethod.GET, "/api/positions/**").permitAll()
+                        // operations and sensitive endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/positions").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/positions/*").permitAll()
+                        // Skills endpoint requires authentication (used in edit forms)
+                        .requestMatchers(HttpMethod.GET, "/api/positions/*/skills").authenticated()
+                        // Applications endpoint requires authentication
+                        .requestMatchers(HttpMethod.GET, "/api/positions/*/applications").authenticated()
                         .anyRequest().authenticated());
 
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

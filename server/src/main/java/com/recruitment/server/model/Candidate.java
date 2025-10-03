@@ -1,10 +1,11 @@
 package com.recruitment.server.model;
 
-
 import lombok.*;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "candidates")
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Candidate {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,6 +58,10 @@ public class Candidate {
 
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("candidate")
+    private List<CandidateSkills> candidateSkills;
 
     public enum Source {
         JOB_PORTAL, REFERRAL, WALK_IN, CAMPUS, SOCIAL_MEDIA, COMPANY_WEBSITE, OTHER
