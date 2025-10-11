@@ -22,6 +22,7 @@ import PositionAnalytics from "./pages/positions/PositionAnalytics";
 import CandidatesList from "./pages/candidates/CandidatesList";
 import AddCandidate from "./pages/candidates/AddCandidate";
 import CandidateDetails from "./pages/candidates/CandidateDetails";
+import ReviewScreening from "./pages/review/ReviewScreening";
 
 import { checkAuth } from "./services/authService";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
@@ -31,6 +32,7 @@ import InterviewerDashboard from "./pages/dashboards/InterviewerDashboard";
 import ReviewerDashboard from "./pages/dashboards/ReviewerDashboard";
 import ViewerDashboard from "./pages/dashboards/ViewerDashboard";
 import Loader from "./components/Loader";
+import InterviewManagement from "./pages/interviews/InterviewManagement";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -63,6 +65,7 @@ const App = () => {
               path="/positions/:id/analytics"
               element={<PositionAnalytics />}
             />
+            <Route path="/positions/:id/review" element={<ReviewScreening />} />
 
             {/* Candidate Routes */}
             <Route path="/candidates" element={<CandidatesList />} />
@@ -88,6 +91,10 @@ const App = () => {
             />
             <Route path="/reviewer/dashboard" element={<ReviewerDashboard />} />
             <Route path="/viewer/dashboard" element={<ViewerDashboard />} />
+            <Route
+              path="/interviews/manage"
+              element={<InterviewManagement />}
+            />
           </Routes>
         </div>
       </div>

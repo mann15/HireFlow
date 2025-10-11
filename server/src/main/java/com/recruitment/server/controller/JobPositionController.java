@@ -15,6 +15,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.recruitment.server.service.JobPositionService;
+import com.recruitment.server.dto.CommentRequest;
+import com.recruitment.server.model.Notification;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -34,6 +40,9 @@ public class JobPositionController {
     private final SkillsRepository skillsRepository;
     private final ProficiencyLevelsRepository proficiencyLevelsRepository;
     private final JobApplicationRepository jobApplicationRepository;
+
+    @Autowired
+    private JobPositionService jobPositionService;
 
     public JobPositionController(JobRepository jobRepository, UserRepository userRepository,
             JobSkillsRequiredRepository jobSkillsRequiredRepository,
@@ -325,6 +334,49 @@ public class JobPositionController {
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid status value: " + status);
+        }
+    }
+
+    @PutMapping("/{position_id}/assign-reviewer")
+    public ResponseEntity<?> assignReviewerToPosition(@PathVariable Long position_id, @RequestParam Long reviewerId) {
+        try {
+            jobPositionService.assignReviewer(position_id, reviewerId);
+            return ResponseEntity.ok("Reviewer assigned successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to assign reviewer: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{position_id}/comments")
+    public ResponseEntity<?> addCommentToPosition(@PathVariable Long position_id,
+            @RequestBody CommentRequest commentRequest) {
+        try {
+            jobPositionService.addComment(position_id, commentRequest);
+            return ResponseEntity.ok("Comment added successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Failed to add comment: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{position_id}/shortlist")
+    public ResponseEntity<?> shortlistCandidate(@PathVariable Long position_id, @RequestParam Long candidateId) {
+        try {
+            jobPositionService.shortlistCandidate(position_id, candidateId);
+            return ResponseEntity.ok("Candidate shortlisted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to shortlist candidate: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{position_id}/notifications")
+    public ResponseEntity<?> getNotificationsForPosition(@PathVariable Long position_id) {
+        try {
+            List<Notification> notifications = jobPositionService.getNotifications(position_id);
+            return ResponseEntity.ok(notifications);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to fetch notifications: " + e.getMessage());
         }
     }
 }
