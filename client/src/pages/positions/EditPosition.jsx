@@ -7,6 +7,7 @@ import {
   closePosition,
   getPositionSkills,
   updatePositionSkills,
+  getApplicationsByPosition,
 } from "../../services/positionService";
 import Loader from "../../components/Loader";
 
@@ -16,6 +17,8 @@ const EditPosition = () => {
   const [skills, setSkills] = useState({ required: [], preferred: [] });
   const [statusReason, setStatusReason] = useState("");
   const [selectedCandidate, setSelectedCandidate] = useState("");
+  const [applications, setApplications] = useState([]);
+  const [selectedCandidates, setSelectedCandidates] = useState([]); // multi-select
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -31,6 +34,13 @@ const EditPosition = () => {
         setPosition(p);
         const positionSkills = await getPositionSkills(id);
         setSkills(positionSkills || { required: [], preferred: [] });
+        // load applications for multi-select when closing
+        try {
+          const apps = await getApplicationsByPosition(id);
+          setApplications(apps || []);
+        } catch (aErr) {
+          console.warn("Failed to load applications for position", aErr);
+        }
       } catch (err) {
         setError(err.message || "Failed to load position");
       } finally {
@@ -70,8 +80,12 @@ const EditPosition = () => {
         if (position.status === "ON_HOLD") {
           await updatePositionStatus(id, "ON_HOLD", statusReason);
         } else if (position.status === "CLOSED") {
+          const selected =
+            selectedCandidates && selectedCandidates.length > 0
+              ? selectedCandidates.join(",")
+              : (selectedCandidate && selectedCandidate.trim()) || null;
           await closePosition(id, {
-            selectedCandidate: selectedCandidate.trim() || null,
+            selectedCandidate: selected,
             reason: statusReason,
           });
         }
@@ -333,14 +347,36 @@ const EditPosition = () => {
         {position.status === "CLOSED" && (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Selected Candidate ID
+              Select Applied Candidate(s)
             </label>
-            <input
-              value={selectedCandidate}
-              onChange={(e) => setSelectedCandidate(e.target.value)}
-              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Enter selected candidate ID (if applicable)"
-            />
+            {applications.length === 0 ? (
+              <div className="text-gray-500">
+                No applications available to select.
+              </div>
+            ) : (
+              <select
+                multiple
+                value={selectedCandidates}
+                onChange={(e) => {
+                  const opts = Array.from(e.target.selectedOptions).map(
+                    (o) => o.value
+                  );
+                  setSelectedCandidates(opts);
+                }}
+                className="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                size={Math.min(6, applications.length)}
+              >
+                {applications.map((app) => (
+                  <option
+                    key={app.applicationId}
+                    value={String(app.applicationId)}
+                  >
+                    {app.candidate?.firstName} {app.candidate?.lastName} — #
+                    {app.applicationId}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 

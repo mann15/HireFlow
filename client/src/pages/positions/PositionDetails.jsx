@@ -3,12 +3,14 @@ import { useParams, Link } from "react-router-dom";
 import {
   getPositionById,
   getApplicationsByPosition,
+  getPositionSkills,
 } from "../../services/positionService";
 
 const PositionDetails = () => {
   const { id } = useParams();
   const [position, setPosition] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [skills, setSkills] = useState({ required: [], preferred: [] });
 
   useEffect(() => {
     fetch();
@@ -20,6 +22,17 @@ const PositionDetails = () => {
       setPosition(pos);
       const apps = await getApplicationsByPosition(id);
       setApplications(apps || []);
+      // fetch skills (required / preferred)
+      try {
+        const sk = await getPositionSkills(id);
+        // backend returns { required: [...], preferred: [...] }
+        setSkills({
+          required: sk.required || [],
+          preferred: sk.preferred || [],
+        });
+      } catch (sErr) {
+        console.warn("Could not fetch position skills", sErr);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -36,6 +49,7 @@ const PositionDetails = () => {
             Status: {position.status || "OPEN"}
           </p>
         </div>
+
         <div className="space-x-2">
           <Link
             to={`/positions/${position.positionId}/edit`}
@@ -58,9 +72,73 @@ const PositionDetails = () => {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <h3 className="font-medium">Description</h3>
+          <p className="whitespace-pre-wrap">{position.jobDescription}</p>
+        </div>
+
+        <div>
+          <h3 className="font-medium">Details</h3>
+          <ul className="text-sm text-gray-700 mt-2 space-y-2">
+            <li>
+              <strong>Department:</strong> {position.department || "-"}
+            </li>
+            <li>
+              <strong>Employment Type:</strong> {position.employmentType || "-"}
+            </li>
+            <li>
+              <strong>Experience:</strong> {position.experienceRequiredMin ?? 0}{" "}
+              - {position.experienceRequiredMax ?? 0} years
+            </li>
+            <li>
+              <strong>Salary Range:</strong>{" "}
+              {position.salaryMin != null || position.salaryMax != null ? (
+                <span>
+                  {position.salaryMin != null ? `$${position.salaryMin}` : "-"}{" "}
+                  {" - "}
+                  {position.salaryMax != null ? `$${position.salaryMax}` : "-"}
+                </span>
+              ) : (
+                <span>-</span>
+              )}
+            </li>
+            <li>
+              <strong>Total Positions:</strong> {position.totalPositions || 0}
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div className="mb-6">
-        <h3 className="font-medium">Description</h3>
-        <p className="whitespace-pre-wrap">{position.description}</p>
+        <h3 className="font-medium mb-2">Skills</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="font-medium">Required / Mandatory</h4>
+            {skills.required.length === 0 ? (
+              <div className="text-gray-500">No required skills listed.</div>
+            ) : (
+              <ul className="list-disc list-inside">
+                {skills.required.map((s, i) => (
+                  <li key={`req-${i}`}>{s}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <h4 className="font-medium">Preferred</h4>
+            {skills.preferred.length === 0 ? (
+              <div className="text-gray-500">No preferred skills listed.</div>
+            ) : (
+              <ul className="list-disc list-inside">
+                {skills.preferred.map((s, i) => (
+                  <li key={`pref-${i}`}>{s}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
       <div>

@@ -5,9 +5,9 @@ const PositionCard = ({ position }) => {
   const formatSalary = (min, max) => {
     if (!min && !max) return "Salary not specified";
     if (min && max)
-      return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-    if (min) return `From $${min.toLocaleString()}`;
-    if (max) return `Up to $${max.toLocaleString()}`;
+      return `${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min) return `From ${min.toLocaleString()}`;
+    if (max) return `Up to ${max.toLocaleString()}`;
   };
 
   const formatExperience = (min, max) => {

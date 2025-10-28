@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { createPosition } from "../../services/positionService";
+import {
+  createPosition,
+  addPositionSkills,
+} from "../../services/positionService";
 import { useNavigate } from "react-router-dom";
 
 const AddPosition = () => {
@@ -12,6 +15,8 @@ const AddPosition = () => {
   const [salaryMin, setSalaryMin] = useState("");
   const [salaryMax, setSalaryMax] = useState("");
   const [totalPositions, setTotalPositions] = useState(1);
+  const [requiredSkills, setRequiredSkills] = useState([""]);
+  const [preferredSkills, setPreferredSkills] = useState([""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -34,6 +39,11 @@ const AddPosition = () => {
       return;
     }
 
+    if (experienceMin > experienceMax) {
+      setError("Minimum experience cannot be greater than maximum experience");
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -51,6 +61,26 @@ const AddPosition = () => {
       };
 
       const created = await createPosition(payload);
+
+      // Process skills
+      const reqSkillsClean = requiredSkills
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const prefSkillsClean = preferredSkills
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (reqSkillsClean.length > 0 || prefSkillsClean.length > 0) {
+        try {
+          await addPositionSkills(created.positionId, {
+            required: reqSkillsClean,
+            preferred: prefSkillsClean,
+          });
+        } catch (skillErr) {
+          console.error("Failed to add skills", skillErr);
+        }
+      }
+
       navigate(`/positions/${created.positionId}`);
     } catch (err) {
       setError(err.message || "Failed to create position");
@@ -58,6 +88,38 @@ const AddPosition = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const addRequiredSkill = () => {
+    setRequiredSkills([...requiredSkills, ""]);
+  };
+
+  const removeRequiredSkill = (index) => {
+    if (requiredSkills.length > 1) {
+      setRequiredSkills(requiredSkills.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateRequiredSkill = (index, value) => {
+    const updatedSkills = [...requiredSkills];
+    updatedSkills[index] = value;
+    setRequiredSkills(updatedSkills);
+  };
+
+  const addPreferredSkill = () => {
+    setPreferredSkills([...preferredSkills, ""]);
+  };
+
+  const removePreferredSkill = (index) => {
+    if (preferredSkills.length > 1) {
+      setPreferredSkills(preferredSkills.filter((_, i) => i !== index));
+    }
+  };
+
+  const updatePreferredSkill = (index, value) => {
+    const updatedSkills = [...preferredSkills];
+    updatedSkills[index] = value;
+    setPreferredSkills(updatedSkills);
   };
 
   return (
@@ -241,7 +303,100 @@ const AddPosition = () => {
             </div>
           </div>
 
-          <div className="pt-6 flex justify-end space-x-4">
+          {/* Skills Section - Now properly integrated in the form */}
+          <div className="border-t border-gray-200 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Skills</h3>
+
+            {/* Required Skills */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Required Skills
+              </label>
+              <p className="text-sm text-gray-500 mb-4">
+                Enter skill names required for this position.
+              </p>
+              {requiredSkills.map((skill, index) => (
+                <div
+                  key={`req-${index}`}
+                  className="flex items-center gap-3 mb-3"
+                >
+                  <input
+                    type="text"
+                    value={skill}
+                    onChange={(e) => updateRequiredSkill(index, e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., Java, Python, Project Management"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeRequiredSkill(index)}
+                    disabled={requiredSkills.length === 1}
+                    className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+                      requiredSkills.length === 1
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                        : "text-red-700 bg-white hover:bg-red-50"
+                    }`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addRequiredSkill}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Add Required Skill
+              </button>
+            </div>
+
+            {/* Preferred Skills */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Preferred Skills
+              </label>
+              <p className="text-sm text-gray-500 mb-4">
+                Enter skill names that are preferred (not mandatory).
+              </p>
+              {preferredSkills.map((skill, index) => (
+                <div
+                  key={`pref-${index}`}
+                  className="flex items-center gap-3 mb-3"
+                >
+                  <input
+                    type="text"
+                    value={skill}
+                    onChange={(e) =>
+                      updatePreferredSkill(index, e.target.value)
+                    }
+                    className="flex-1 border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., React, AWS, Agile Certification"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePreferredSkill(index)}
+                    disabled={preferredSkills.length === 1}
+                    className={`px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium ${
+                      preferredSkills.length === 1
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                        : "text-red-700 bg-white hover:bg-red-50"
+                    }`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPreferredSkill}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Add Preferred Skill
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-6 flex justify-end space-x-4 border-t border-gray-200">
             <button
               type="button"
               onClick={() => navigate("/positions")}
