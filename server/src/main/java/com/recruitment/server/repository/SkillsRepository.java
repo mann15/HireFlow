@@ -8,4 +8,6 @@ import java.util.List;
 public interface SkillsRepository extends JpaRepository<Skills, Long> {
     @Query("SELECT DISTINCT s.category FROM Skills s WHERE s.category IS NOT NULL")
     List<String> findDistinctCategories();
+
+    Skills findBySkillNameIgnoreCase(String skillName);
 }

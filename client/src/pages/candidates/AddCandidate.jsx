@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { candidateService } from "../../services/candidateService";
 
 const AddCandidate = () => {
   const navigate = useNavigate();
+  const { candidateId } = useParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -56,7 +57,11 @@ const AddCandidate = () => {
           : null,
       };
 
-      await candidateService.createCandidate(candidateData);
+      if (candidateId) {
+        await candidateService.updateCandidate(candidateId, candidateData);
+      } else {
+        await candidateService.createCandidate(candidateData);
+      }
       navigate("/candidates");
     } catch (err) {
       setError(err.error || "Failed to create candidate");
@@ -64,6 +69,42 @@ const AddCandidate = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // If editing, fetch candidate and populate form
+    let mounted = true;
+    if (candidateId) {
+      candidateService
+        .getCandidateById(candidateId)
+        .then((res) => {
+          if (!mounted) return;
+          if (res) {
+            setFormData({
+              firstName: res.firstName || "",
+              lastName: res.lastName || "",
+              email: res.email || "",
+              phone: res.phone || "",
+              alternatePhone: res.alternatePhone || "",
+              currentLocation: res.currentLocation || "",
+              preferredLocation: res.preferredLocation || "",
+              totalExperience: res.totalExperience || "",
+              currentSalary: res.currentSalary || "",
+              expectedSalary: res.expectedSalary || "",
+              noticePeriod: res.noticePeriod || "",
+              source: res.source || "OTHER",
+              sourceDetails: res.sourceDetails || "",
+              linkedinUrl: res.linkedinUrl || "",
+              githubUrl: res.githubUrl || "",
+              portfolioUrl: res.portfolioUrl || "",
+            });
+          }
+        })
+        .catch((e) => {
+          console.error("Failed to load candidate", e);
+        });
+    }
+    return () => (mounted = false);
+  }, [candidateId]);
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20">

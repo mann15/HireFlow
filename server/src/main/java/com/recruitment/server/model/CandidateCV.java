@@ -19,10 +19,23 @@ public class CandidateCV {
     private Candidate candidate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "position_id", nullable = false)
+    @JoinColumn(name = "position_id", nullable = true)
     private JobPosition positionId;
 
+    /**
+     * Original storage path or Cloudinary URL depending on configuration.
+     */
     @Column(nullable = false)
     private String cvFilePath;
+
+    /** Cloudinary public id (if uploaded to Cloudinary) */
+    private String cloudPublicId;
+
+    /** Cloudinary secure URL */
+    private String cloudUrl;
+
+    /** Extracted structured/profile data (JSON string) */
+    @Column(columnDefinition = "TEXT")
+    private String extractedData;
 
 }

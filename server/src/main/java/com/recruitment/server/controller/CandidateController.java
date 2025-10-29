@@ -39,11 +39,13 @@ public class CandidateController {
     // Upload CV for candidate
     @PostMapping("/{candidateId}/cv")
     public ResponseEntity<?> uploadCV(@PathVariable Long candidateId,
-            @RequestParam Long positionId,
+            @RequestParam(required = false) Long positionId,
             @RequestParam("file") MultipartFile file) {
         try {
-            CandidateCV candidateCV = candidateService.uploadCV(candidateId, positionId, file);
-            return ResponseEntity.status(HttpStatus.CREATED).body(candidateCV);
+            // service now returns a map containing keys: "cv", "candidate", and optionally
+            // "application"
+            Map<String, Object> result = candidateService.uploadCV(candidateId, positionId, file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (IOException e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Failed to upload CV: " + e.getMessage());
@@ -67,6 +69,25 @@ public class CandidateController {
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Failed to bulk upload candidates: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    // Create candidate using uploaded CV (no existing candidateId required)
+    @PostMapping("/from-cv")
+    public ResponseEntity<?> createCandidateFromCV(@RequestParam(required = false) Long positionId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            // positionId is optional now. Service will handle null.
+            Map<String, Object> result = candidateService.createCandidateFromCV(file, positionId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (IOException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to process CV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to create candidate from CV: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -177,5 +198,31 @@ public class CandidateController {
     public ResponseEntity<List<CandidateSkills>> getCandidateSkills(@PathVariable Long candidateId) {
         List<CandidateSkills> skills = candidateService.getCandidateSkills(candidateId);
         return ResponseEntity.ok(skills);
+    }
+
+    // Link a candidate to a position (create application)
+    @PostMapping("/{candidateId}/apply")
+    public ResponseEntity<?> applyCandidateToPosition(@PathVariable Long candidateId,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Long positionId = body.get("positionId") instanceof Number ? ((Number) body.get("positionId")).longValue()
+                    : body.get("positionId") != null ? Long.parseLong(body.get("positionId").toString()) : null;
+
+            Long cvId = body.get("cvId") instanceof Number ? ((Number) body.get("cvId")).longValue()
+                    : body.get("cvId") != null ? Long.parseLong(body.get("cvId").toString()) : null;
+
+            if (positionId == null) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "positionId is required");
+                return ResponseEntity.badRequest().body(error);
+            }
+
+            JobApplication application = candidateService.createApplication(candidateId, positionId, cvId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(application);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to create application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 }

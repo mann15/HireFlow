@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { candidateService } from "../../services/candidateService";
 import Loader from "../../components/Loader";
 import BulkUploadCandidates from "../../components/candidates/BulkUploadCandidates";
+import CVUpload from "../../components/candidates/CVUpload";
 
 const CandidatesList = () => {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showCreateFromCV, setShowCreateFromCV] = useState(false);
   const [searchParams, setSearchParams] = useState({
     name: "",
     location: "",
@@ -79,6 +81,12 @@ const CandidatesList = () => {
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium"
             >
               {showBulkUpload ? "Hide Bulk Upload" : "Bulk Upload"}
+            </button>
+            <button
+              onClick={() => setShowCreateFromCV(!showCreateFromCV)}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition duration-200 font-medium"
+            >
+              {showCreateFromCV ? "Hide Create from CV" : "Create from CV"}
             </button>
             <Link
               to="/candidates/add"
@@ -187,6 +195,24 @@ const CandidatesList = () => {
         {showBulkUpload && (
           <div className="mb-8">
             <BulkUploadCandidates onUploadComplete={handleBulkUploadComplete} />
+          </div>
+        )}
+
+        {/* Create from CV Section */}
+        {showCreateFromCV && (
+          <div className="mb-8">
+            {/* CVUpload without candidateId will create a candidate from the uploaded CV */}
+            <CVUpload
+              onUploadComplete={(res) => {
+                // when create-from-cv completes, if it returns a candidate, add to list
+                if (res && res.candidate) {
+                  setCandidates((prev) => [...prev, res.candidate]);
+                } else if (res && res.cv && res.cv.candidate) {
+                  setCandidates((prev) => [...prev, res.cv.candidate]);
+                }
+                setShowCreateFromCV(false);
+              }}
+            />
           </div>
         )}
 

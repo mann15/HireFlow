@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { candidateService } from "../../services/candidateService";
+import * as XLSX from "xlsx";
 
 const BulkUploadCandidates = ({ onUploadComplete }) => {
   const [file, setFile] = useState(null);
@@ -57,44 +58,84 @@ const BulkUploadCandidates = ({ onUploadComplete }) => {
   };
 
   const parseExcelFile = async (file) => {
-    // This is a simplified version - in a real application, you'd use a library like xlsx
-    // For now, we'll return sample data structure
-    return [
-      {
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@example.com",
-        phone: "+1234567890",
-        currentLocation: "New York",
-        preferredLocation: "San Francisco",
-        totalExperience: 5,
-        currentSalary: 80000,
-        expectedSalary: 100000,
-        noticePeriod: 30,
-        source: "JOB_PORTAL",
-        sourceDetails: "LinkedIn",
-        linkedinUrl: "https://linkedin.com/in/johndoe",
-        githubUrl: "https://github.com/johndoe",
-        portfolioUrl: "https://johndoe.com",
-      },
-      {
-        firstName: "Jane",
-        lastName: "Smith",
-        email: "jane.smith@example.com",
-        phone: "+1234567891",
-        currentLocation: "Los Angeles",
-        preferredLocation: "Seattle",
-        totalExperience: 3,
-        currentSalary: 70000,
-        expectedSalary: 90000,
-        noticePeriod: 15,
-        source: "REFERRAL",
-        sourceDetails: "Employee referral",
-        linkedinUrl: "https://linkedin.com/in/janesmith",
-        githubUrl: "https://github.com/janesmith",
-        portfolioUrl: "https://janesmith.com",
-      },
-    ];
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+
+          // Use the first sheet
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+
+          // Convert to JSON
+          const rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+
+          // Map/normalize each row to expected fields and types
+          const mapped = rawJson.map((row) => {
+            const safe = (k) =>
+              row[k] !== undefined && row[k] !== null ? row[k] : null;
+
+            // Normalize numeric fields if they are strings
+            const totalExperience = safe("totalExperience");
+            const currentSalary = safe("currentSalary");
+            const expectedSalary = safe("expectedSalary");
+            const noticePeriod = safe("noticePeriod");
+
+            return {
+              firstName:
+                safe("firstName") ||
+                safe("First Name") ||
+                safe("first_name") ||
+                "",
+              lastName:
+                safe("lastName") ||
+                safe("Last Name") ||
+                safe("last_name") ||
+                "",
+              email: safe("email") || safe("Email") || "",
+              phone: safe("phone") || safe("Phone") || null,
+              currentLocation:
+                safe("currentLocation") || safe("Current Location") || null,
+              preferredLocation:
+                safe("preferredLocation") || safe("Preferred Location") || null,
+              totalExperience:
+                totalExperience !== null && totalExperience !== ""
+                  ? parseFloat(totalExperience)
+                  : 0,
+              currentSalary:
+                currentSalary !== null && currentSalary !== ""
+                  ? parseFloat(currentSalary)
+                  : null,
+              expectedSalary:
+                expectedSalary !== null && expectedSalary !== ""
+                  ? parseFloat(expectedSalary)
+                  : null,
+              noticePeriod:
+                noticePeriod !== null && noticePeriod !== ""
+                  ? parseInt(noticePeriod)
+                  : null,
+              source: safe("source") || "OTHER",
+              sourceDetails: safe("sourceDetails") || null,
+              linkedinUrl: safe("linkedinUrl") || null,
+              githubUrl: safe("githubUrl") || null,
+              portfolioUrl: safe("portfolioUrl") || null,
+            };
+          });
+
+          resolve(mapped);
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      reader.onerror = (e) => {
+        reject(e);
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
   };
 
   const downloadTemplate = () => {
