@@ -26,6 +26,12 @@ public interface JobApplicationRepository extends JpaRepository<JobApplication, 
     List<JobApplication> findByPosition(JobPosition position);
 
     List<JobApplication> findByCandidate(Candidate candidate);
+    
+    List<JobApplication> findByCandidateAndPosition(Candidate candidate, JobPosition position);
+    
+    List<JobApplication> findByPositionPositionId(Long positionId);
+    
+    List<JobApplication> findByStatus(Status status);
 
     @Query("SELECT COUNT(ja) FROM JobApplication ja WHERE ja.candidate.candidateId = :candidateId AND ja.status IN ('SCREENING', 'INTERVIEW', 'SELECTED', 'REJECTED', 'ON_HOLD')")
     int countPreviousApplicationsByCandidate(@Param("candidateId") Long candidateId);
