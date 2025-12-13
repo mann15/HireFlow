@@ -59,6 +59,11 @@ public class Candidate {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    // Link to user account for candidate login
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnoreProperties("candidate")
     private List<CandidateSkills> candidateSkills;

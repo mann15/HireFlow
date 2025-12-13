@@ -20,14 +20,14 @@ public class EmployeeController {
     private final EmployeeService employeeService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> createEmployee(@RequestBody Map<String, Object> employeeData) {
         try {
             Long candidateId = Long.valueOf(employeeData.get("candidateId").toString());
             Long positionId = Long.valueOf(employeeData.get("positionId").toString());
-            Long offerId = employeeData.get("offerId") != null 
-                ? Long.valueOf(employeeData.get("offerId").toString())
-                : null;
+            Long offerId = employeeData.get("offerId") != null
+                    ? Long.valueOf(employeeData.get("offerId").toString())
+                    : null;
             String designation = employeeData.get("designation").toString();
             String department = employeeData.get("department").toString();
             LocalDate joiningDate = LocalDate.parse(employeeData.get("joiningDate").toString());
@@ -42,7 +42,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> getAllEmployees(@RequestParam(required = false) String status,
             @RequestParam(required = false) String department) {
         try {
@@ -63,7 +63,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> getEmployeeById(@PathVariable Long employeeId) {
         try {
             Employee employee = employeeService.getEmployeeById(employeeId);
@@ -74,7 +74,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/code/{employeeCode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> getEmployeeByCode(@PathVariable String employeeCode) {
         try {
             Employee employee = employeeService.getEmployeeByCode(employeeCode);
@@ -85,7 +85,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/candidate/{candidateId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> getEmployeeByCandidate(@PathVariable Long candidateId) {
         try {
             Employee employee = employeeService.getEmployeeByCandidate(candidateId);
@@ -96,7 +96,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> updateEmployee(@PathVariable Long employeeId,
             @RequestBody Employee employeeData) {
         try {
@@ -108,7 +108,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{employeeId}/relieve")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> relieveEmployee(@PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate relievingDate,
             @RequestParam(required = false) String notes) {

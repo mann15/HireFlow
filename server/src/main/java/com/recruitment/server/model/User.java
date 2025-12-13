@@ -51,6 +51,10 @@ public class User {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    // Track if user needs to change password on first login
+    @Builder.Default
+    private Boolean requiresPasswordChange = false;
+
     @PreUpdate
     public void setLastUpdate() {
         this.updatedAt = LocalDateTime.now();

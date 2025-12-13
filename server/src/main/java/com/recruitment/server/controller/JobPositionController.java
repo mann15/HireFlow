@@ -69,7 +69,7 @@ public class JobPositionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<JobPosition> createPosition(@RequestBody JobPosition jobPosition,
             Authentication authentication) {
         // Set the creating user based on authenticated principal
@@ -83,7 +83,7 @@ public class JobPositionController {
     }
 
     @PutMapping("/{position_id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> updatePosition(@PathVariable("position_id") Long id, @RequestBody JobPosition jobDetails) {
         return jobRepository.findById(id)
                 .map(job -> {
@@ -106,7 +106,7 @@ public class JobPositionController {
     }
 
     @DeleteMapping("/{position_id}")
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<?> deletePosition(@PathVariable("position_id") Long id) {
         return jobRepository.findById(id)
                 .map(job -> {
@@ -117,7 +117,7 @@ public class JobPositionController {
     }
 
     @PutMapping("/{position_id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> updatePositionStatus(@PathVariable("position_id") Long id, @RequestParam String status) {
         return jobRepository.findById(id)
                 .map(job -> {
@@ -184,7 +184,7 @@ public class JobPositionController {
     }
 
     @PostMapping("/{position_id}/skills")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> addPositionSkills(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, List<String>> skillsData) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
@@ -264,7 +264,7 @@ public class JobPositionController {
     }
 
     @PutMapping("/{position_id}/skills")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> updatePositionSkills(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, List<String>> skillsData) {
         return addPositionSkills(positionId, skillsData);
@@ -272,7 +272,7 @@ public class JobPositionController {
 
     // Position closing endpoint
     @PostMapping("/{position_id}/close")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> closePosition(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, Object> closeData) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
@@ -305,7 +305,7 @@ public class JobPositionController {
 
     // Update position status with reason
     @PatchMapping("/{position_id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> updatePositionStatusWithReason(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, String> statusData) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
@@ -338,6 +338,7 @@ public class JobPositionController {
     }
 
     @PutMapping("/{position_id}/assign-reviewer")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> assignReviewerToPosition(@PathVariable Long position_id, @RequestParam Long reviewerId) {
         try {
             jobPositionService.assignReviewer(position_id, reviewerId);
@@ -348,6 +349,7 @@ public class JobPositionController {
     }
 
     @PostMapping("/{position_id}/comments")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> addCommentToPosition(@PathVariable Long position_id,
             @RequestBody CommentRequest commentRequest) {
         try {
@@ -359,6 +361,7 @@ public class JobPositionController {
     }
 
     @PutMapping("/{position_id}/shortlist")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> shortlistCandidate(@PathVariable Long position_id, @RequestParam Long candidateId) {
         try {
             jobPositionService.shortlistCandidate(position_id, candidateId);
@@ -370,6 +373,7 @@ public class JobPositionController {
     }
 
     @GetMapping("/{position_id}/notifications")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','VIEWER')")
     public ResponseEntity<?> getNotificationsForPosition(@PathVariable Long position_id) {
         try {
             List<Notification> notifications = jobPositionService.getNotifications(position_id);

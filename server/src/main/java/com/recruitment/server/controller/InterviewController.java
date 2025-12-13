@@ -22,7 +22,7 @@ public class InterviewController {
     private final UserRepository userRepository;
 
     @PostMapping("/rounds/define")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> defineInterviewRounds(@RequestParam Long positionId,
             @RequestBody List<InterviewRound> rounds) {
         try {
@@ -45,7 +45,7 @@ public class InterviewController {
     }
 
     @PostMapping("/schedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> scheduleInterview(@RequestBody Map<String, Object> scheduleData,
             Authentication authentication) {
         try {
@@ -76,7 +76,7 @@ public class InterviewController {
     }
 
     @PostMapping("/bulk-schedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> scheduleBulkInterviews(@RequestBody Map<String, Object> bulkData,
             Authentication authentication) {
         try {
@@ -110,7 +110,7 @@ public class InterviewController {
     }
 
     @PutMapping("/{interviewId}/reschedule")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> rescheduleInterview(@PathVariable Long interviewId,
             @RequestParam String newDate) {
         try {
@@ -123,7 +123,7 @@ public class InterviewController {
     }
 
     @PutMapping("/{interviewId}/cancel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> cancelInterview(@PathVariable Long interviewId) {
         try {
             CandidateInterview interview = interviewService.cancelInterview(interviewId);
@@ -134,7 +134,7 @@ public class InterviewController {
     }
 
     @PutMapping("/{interviewId}/complete")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR', 'INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','INTERVIEWER')")
     public ResponseEntity<?> completeInterview(@PathVariable Long interviewId) {
         try {
             CandidateInterview interview = interviewService.completeInterview(interviewId);
@@ -145,7 +145,7 @@ public class InterviewController {
     }
 
     @PostMapping("/{interviewId}/feedback")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR', 'INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','INTERVIEWER')")
     public ResponseEntity<?> submitFeedback(@PathVariable Long interviewId,
             @RequestBody InterviewFeedback feedback,
             Authentication authentication) {
@@ -174,7 +174,7 @@ public class InterviewController {
     }
 
     @GetMapping("/my-interviews")
-    @PreAuthorize("hasAnyRole('INTERVIEWER', 'HR', 'RECRUITER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('INTERVIEWER','HR','RECRUITER','ADMIN','SUPER_ADMIN')")
     public ResponseEntity<?> getMyInterviews(Authentication authentication) {
         try {
             User panelist = userRepository.findByEmail(authentication.getName())

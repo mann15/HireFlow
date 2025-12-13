@@ -1,7 +1,5 @@
 package com.recruitment.server.service;
 
-
-
 import com.recruitment.server.model.User;
 import com.recruitment.server.repository.UserRepository;
 import org.springframework.security.core.userdetails.*;
@@ -21,10 +19,18 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        String normalizedRole = user.getRole() != null
+                ? user.getRole().getRoleName().toUpperCase()
+                : "USER";
+
+        if ("USER".equals(normalizedRole)) {
+            normalizedRole = "CANDIDATE";
+        }
+
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .roles(user.getRole().getRoleName())
+                .roles(normalizedRole)
                 .disabled(!user.getIsActive())
                 .build();
     }

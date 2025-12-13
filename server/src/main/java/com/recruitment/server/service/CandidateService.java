@@ -5,6 +5,8 @@ import com.recruitment.server.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -30,6 +32,9 @@ public class CandidateService {
         private final JobRepository jobRepository;
         private final JobApplicationRepository jobApplicationRepository;
         private final CVProcessingService cvProcessingService;
+        private final UserRepository userRepository;
+        private final RoleRepository roleRepository;
+        private final PasswordEncoder passwordEncoder;
 
         // Local upload directory was removed in favor of Cloudinary when configured
 
@@ -37,7 +42,39 @@ public class CandidateService {
         public Candidate createCandidate(Candidate candidate) {
                 candidate.setCreatedAt(LocalDateTime.now());
                 candidate.setUpdatedAt(LocalDateTime.now());
+
+                // Create user account for candidate
+                if (candidate.getEmail() != null && !candidate.getEmail().isEmpty()) {
+                        User user = User.builder()
+                                        .email(candidate.getEmail())
+                                        .password(passwordEncoder.encode("1234"))
+                                        .firstName(candidate.getFirstName())
+                                        .lastName(candidate.getLastName())
+                                        .phone(candidate.getPhone())
+                                        .isActive(true)
+                                        .requiresPasswordChange(true)
+                                        .createdAt(LocalDateTime.now())
+                                        .updatedAt(LocalDateTime.now())
+                                        .build();
+
+                        // Set CANDIDATE role (create if not exists)
+                        user.setRole(getCandidateRole());
+
+                        User savedUser = userRepository.save(user);
+                        candidate.setUser(savedUser);
+                }
+
                 return candidateRepository.save(candidate);
+        }
+
+        // Helper: Get or create CANDIDATE role
+        private Role getCandidateRole() {
+                Role candidateRole = roleRepository.findByRoleName("CANDIDATE");
+                if (candidateRole == null) {
+                        candidateRole = Role.builder().roleName("CANDIDATE").build();
+                        candidateRole = roleRepository.save(candidateRole);
+                }
+                return candidateRole;
         }
 
         // Helper: extract email from raw text
@@ -540,6 +577,29 @@ public class CandidateService {
                         }
 
                         candidateObj = candidateRepository.save(newCand);
+
+                        // Create user account for candidate from CV
+                        if (email != null && !email.isEmpty() && !email.contains("example.local")) {
+                                User user = User.builder()
+                                                .email(email)
+                                                .password(passwordEncoder.encode("1234"))
+                                                .firstName(firstName)
+                                                .lastName(lastName)
+                                                .phone(parsed != null && parsed.get("phone") != null
+                                                                ? parsed.get("phone").toString()
+                                                                : null)
+                                                .isActive(true)
+                                                .requiresPasswordChange(true)
+                                                .createdAt(LocalDateTime.now())
+                                                .updatedAt(LocalDateTime.now())
+                                                .build();
+
+                                // Set CANDIDATE role (create if not exists)
+                                user.setRole(getCandidateRole());
+                                User savedUser = userRepository.save(user);
+                                candidateObj.setUser(savedUser);
+                                candidateObj = candidateRepository.save(candidateObj);
+                        }
                 }
 
                 // Create CV record
@@ -578,38 +638,52 @@ public class CandidateService {
         }
 
         // Bulk upload candidates from Excel
+        @Transactional(propagation = Propagation.NOT_SUPPORTED)
         public List<Candidate> bulkUploadCandidates(List<Map<String, Object>> candidateData) {
                 List<Candidate> candidates = new ArrayList<>();
 
                 for (Map<String, Object> data : candidateData) {
                         try {
                                 Candidate candidate = Candidate.builder()
-                                                .email((String) data.get("email"))
-                                                .firstName((String) data.get("firstName"))
-                                                .lastName((String) data.get("lastName"))
-                                                .phone((String) data.get("phone"))
-                                                .currentLocation((String) data.get("currentLocation"))
-                                                .preferredLocation((String) data.get("preferredLocation"))
-                                                .totalExperience(new BigDecimal(data.get("totalExperience").toString()))
-                                                .currentSalary(
-                                                                data.get("currentSalary") != null ? new BigDecimal(
-                                                                                data.get("currentSalary").toString())
-                                                                                : null)
-                                                .expectedSalary(data.get("expectedSalary") != null
-                                                                ? new BigDecimal(data.get("expectedSalary").toString())
-                                                                : null)
-                                                .noticePeriod(
-                                                                data.get("noticePeriod") != null ? Integer.parseInt(
-                                                                                data.get("noticePeriod").toString())
-                                                                                : null)
-                                                .source(Candidate.Source.valueOf((String) data.get("source")))
-                                                .sourceDetails((String) data.get("sourceDetails"))
-                                                .linkedinUrl((String) data.get("linkedinUrl"))
-                                                .githubUrl((String) data.get("githubUrl"))
-                                                .portfolioUrl((String) data.get("portfolioUrl"))
+                                                .email(asString(data.get("email")))
+                                                .firstName(asString(data.get("firstName")))
+                                                .lastName(asString(data.get("lastName")))
+                                                .phone(asString(data.get("phone")))
+                                                .currentLocation(asString(data.get("currentLocation")))
+                                                .preferredLocation(asString(data.get("preferredLocation")))
+                                                .totalExperience(parseBigDecimal(data.get("totalExperience")))
+                                                .currentSalary(parseBigDecimal(data.get("currentSalary")))
+                                                .expectedSalary(parseBigDecimal(data.get("expectedSalary")))
+                                                .noticePeriod(parseInteger(data.get("noticePeriod")))
+                                                .source(parseSource(data.get("source")))
+                                                .sourceDetails(asString(data.get("sourceDetails")))
+                                                .linkedinUrl(asString(data.get("linkedinUrl")))
+                                                .githubUrl(asString(data.get("githubUrl")))
+                                                .portfolioUrl(asString(data.get("portfolioUrl")))
                                                 .createdAt(LocalDateTime.now())
                                                 .updatedAt(LocalDateTime.now())
                                                 .build();
+
+                                // Create user account for bulk uploaded candidate
+                                String email = asString(data.get("email"));
+                                if (email != null && !email.isEmpty()) {
+                                        User user = User.builder()
+                                                        .email(email)
+                                                        .password(passwordEncoder.encode("1234"))
+                                                        .firstName(asString(data.get("firstName")))
+                                                        .lastName(asString(data.get("lastName")))
+                                                        .phone(asString(data.get("phone")))
+                                                        .isActive(true)
+                                                        .requiresPasswordChange(true)
+                                                        .createdAt(LocalDateTime.now())
+                                                        .updatedAt(LocalDateTime.now())
+                                                        .build();
+
+                                        // Set CANDIDATE role (create if not exists)
+                                        user.setRole(getCandidateRole());
+                                        User savedUser = userRepository.save(user);
+                                        candidate.setUser(savedUser);
+                                }
 
                                 candidates.add(candidateRepository.save(candidate));
                         } catch (Exception e) {
@@ -619,6 +693,35 @@ public class CandidateService {
                 }
 
                 return candidates;
+        }
+
+        private String asString(Object value) {
+                return value != null ? value.toString() : null;
+        }
+
+        private BigDecimal parseBigDecimal(Object value) {
+                try {
+                        return value != null ? new BigDecimal(value.toString()) : null;
+                } catch (Exception e) {
+                        return null;
+                }
+        }
+
+        private Integer parseInteger(Object value) {
+                try {
+                        return value != null ? Integer.parseInt(value.toString()) : null;
+                } catch (Exception e) {
+                        return null;
+                }
+        }
+
+        private Candidate.Source parseSource(Object value) {
+                try {
+                        String src = value != null ? value.toString() : null;
+                        return src != null ? Candidate.Source.valueOf(src.toUpperCase()) : Candidate.Source.OTHER;
+                } catch (Exception e) {
+                        return Candidate.Source.OTHER;
+                }
         }
 
         // Add skills to candidate
@@ -735,6 +838,116 @@ public class CandidateService {
                 }
 
                 return candidates;
+        }
+
+        // Get candidates with skill match score for a position
+        public List<Map<String, Object>> getCandidatesWithMatchScore(Long positionId) {
+                JobPosition position = jobRepository.findById(positionId)
+                                .orElseThrow(() -> new RuntimeException("Position not found"));
+
+                // Get all active candidates
+                List<Candidate> allCandidates = candidateRepository.findByIsActiveTrue();
+
+                // Get required and preferred skills for the position
+                List<JobSkillsRequired> allPositionSkills = jobSkillsRequiredRepository.findByPosition(position);
+                List<JobSkillsRequired> mandatorySkills = allPositionSkills.stream()
+                                .filter(JobSkillsRequired::isMandatory)
+                                .collect(Collectors.toList());
+
+                // Calculate match score for each candidate
+                List<Map<String, Object>> matchedCandidates = new ArrayList<>();
+
+                for (Candidate candidate : allCandidates) {
+                        // Get candidate's skills
+                        List<CandidateSkills> candidateSkills = candidateSkillsRepository.findByCandidate(candidate);
+                        List<Long> candidateSkillIds = candidateSkills.stream()
+                                        .map(cs -> cs.getSkill().getSkillId())
+                                        .collect(Collectors.toList());
+
+                        // Check mandatory skills match
+                        long mandatoryMatched = mandatorySkills.stream()
+                                        .filter(ms -> candidateSkillIds.contains(ms.getSkill().getSkillId()))
+                                        .count();
+
+                        // Skip if mandatory skills not met
+                        if (mandatorySkills.size() > 0 && mandatoryMatched < mandatorySkills.size()) {
+                                continue;
+                        }
+
+                        // Check experience match
+                        boolean experienceMatch = true;
+                        if (position.getExperienceRequiredMin() != null) {
+                                if (candidate.getTotalExperience() == null ||
+                                                candidate.getTotalExperience().compareTo(BigDecimal
+                                                                .valueOf(position.getExperienceRequiredMin())) < 0) {
+                                        experienceMatch = false;
+                                }
+                        }
+                        if (position.getExperienceRequiredMax() != null) {
+                                if (candidate.getTotalExperience() == null ||
+                                                candidate.getTotalExperience().compareTo(BigDecimal
+                                                                .valueOf(position.getExperienceRequiredMax())) > 0) {
+                                        experienceMatch = false;
+                                }
+                        }
+
+                        // Check salary match
+                        boolean salaryMatch = true;
+                        if (position.getSalaryMax() != null) {
+                                if (candidate.getExpectedSalary() != null &&
+                                                candidate.getExpectedSalary().compareTo(position.getSalaryMax()) > 0) {
+                                        salaryMatch = false;
+                                }
+                        }
+
+                        // Calculate match percentage
+                        double matchPercentage = 0;
+                        if (allPositionSkills.size() > 0) {
+                                long totalMatched = mandatoryMatched;
+                                for (JobSkillsRequired skill : allPositionSkills) {
+                                        if (!skill.isMandatory()
+                                                        && candidateSkillIds.contains(skill.getSkill().getSkillId())) {
+                                                totalMatched++;
+                                        }
+                                }
+                                matchPercentage = (totalMatched * 100.0) / allPositionSkills.size();
+                        } else {
+                                matchPercentage = 100;
+                        }
+
+                        // Create match result
+                        Map<String, Object> matchResult = new HashMap<>();
+                        matchResult.put("candidate", candidate);
+                        matchResult.put("matchPercentage", Math.round(matchPercentage));
+                        matchResult.put("mandatorySkillsMatched", mandatoryMatched);
+                        matchResult.put("mandatorySkillsRequired", mandatorySkills.size());
+                        matchResult.put("experienceMatch", experienceMatch);
+                        matchResult.put("salaryMatch", salaryMatch);
+                        matchResult.put("matchQuality", getMatchQuality(matchPercentage, experienceMatch, salaryMatch));
+
+                        matchedCandidates.add(matchResult);
+                }
+
+                // Sort by match percentage (descending)
+                matchedCandidates.sort((a, b) -> {
+                        long matchA = (long) a.get("matchPercentage");
+                        long matchB = (long) b.get("matchPercentage");
+                        return Long.compare(matchB, matchA);
+                });
+
+                return matchedCandidates;
+        }
+
+        private String getMatchQuality(double matchPercentage, boolean experienceMatch, boolean salaryMatch) {
+                if (matchPercentage >= 80 && experienceMatch && salaryMatch) {
+                        return "Excellent";
+                } else if (matchPercentage >= 60 && experienceMatch) {
+                        return "Good";
+                } else if (matchPercentage >= 40) {
+                        return "Fair";
+                } else {
+                        return "Poor";
+                }
         }
 
         // Update candidate profile

@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Use relative base by default so Vite dev proxy handles /api -> backend without double-prefixing
+// If VITE_API_URL is provided (e.g., production full URL), it will override.
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const api = axios.create({
   baseURL: API_URL,

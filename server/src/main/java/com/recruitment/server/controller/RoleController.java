@@ -16,11 +16,13 @@ public class RoleController {
     private RoleService roleService;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public List<Role> getAllRoles() {
         return roleService.getAllRoles();
     }
 
     @GetMapping("/{roleId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Role> getRoleById(@PathVariable Long roleId) {
         Role role = roleService.getRoleById(roleId);
         if (role != null) {
@@ -30,13 +32,13 @@ public class RoleController {
         }
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping
     public Role createRole(@RequestBody Role role) {
         return roleService.createRole(role);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PutMapping("/{roleId}")
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestBody Role role) {
         Role updated = roleService.updateRole(roleId, role);
@@ -47,7 +49,7 @@ public class RoleController {
         }
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @DeleteMapping("/{roleId}")
     public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
         boolean deleted = roleService.deleteRole(roleId);

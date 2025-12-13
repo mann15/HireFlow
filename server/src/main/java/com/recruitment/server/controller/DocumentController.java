@@ -22,7 +22,7 @@ public class DocumentController {
     private final UserRepository userRepository;
 
     @PostMapping("/upload")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR', 'CANDIDATE')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> uploadDocument(@RequestParam Long applicationId,
             @RequestParam Long documentTypeId,
             @RequestParam("file") MultipartFile file,
@@ -41,7 +41,7 @@ public class DocumentController {
     }
 
     @PutMapping("/{documentId}/verify")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> verifyDocument(@PathVariable Long documentId,
             @RequestBody Map<String, String> verificationData,
             Authentication authentication) {
@@ -74,7 +74,7 @@ public class DocumentController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> getPendingDocuments() {
         try {
             List<CandidateDocuments> documents = documentService.getPendingDocuments();
@@ -96,7 +96,7 @@ public class DocumentController {
     }
 
     @PostMapping("/types")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<?> createDocumentType(@RequestBody DocumentTypes documentType) {
         try {
             DocumentTypes created = documentService.createDocumentType(documentType);
@@ -107,7 +107,7 @@ public class DocumentController {
     }
 
     @DeleteMapping("/{documentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> deleteDocument(@PathVariable Long documentId) {
         try {
             documentService.deleteDocument(documentId);

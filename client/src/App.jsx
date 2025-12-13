@@ -1,11 +1,5 @@
 import React, { useEffect } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -33,6 +27,7 @@ import ReviewerDashboard from "./pages/dashboards/ReviewerDashboard";
 import ViewerDashboard from "./pages/dashboards/ViewerDashboard";
 import Loader from "./components/Loader";
 import InterviewManagement from "./pages/interviews/InterviewManagement";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -54,46 +49,210 @@ const App = () => {
             <Route path="/signup" element={<Signup />} />
 
             <Route path="/positions" element={<PositionsList />} />
-            <Route path="/positions/add" element={<AddPosition />} />
-            <Route path="/positions/:id" element={<PositionDetails />} />
-            <Route path="/positions/:id/edit" element={<EditPosition />} />
+            <Route
+              path="/positions/add"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "RECRUITER"]}
+                >
+                  <AddPosition />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/positions/:id"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "ADMIN",
+                    "SUPER_ADMIN",
+                    "RECRUITER",
+                    "HR",
+                    "REVIEWER",
+                    "INTERVIEWER",
+                    "CANDIDATE",
+                    "VIEWER",
+                  ]}
+                >
+                  <PositionDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/positions/:id/edit"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "RECRUITER"]}
+                >
+                  <EditPosition />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/positions/:id/applications"
-              element={<PositionApplications />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "ADMIN",
+                    "SUPER_ADMIN",
+                    "RECRUITER",
+                    "HR",
+                    "REVIEWER",
+                    "VIEWER",
+                  ]}
+                >
+                  <PositionApplications />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/positions/:id/analytics"
-              element={<PositionAnalytics />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "ADMIN",
+                    "SUPER_ADMIN",
+                    "RECRUITER",
+                    "HR",
+                    "VIEWER",
+                  ]}
+                >
+                  <PositionAnalytics />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/positions/:id/review" element={<ReviewScreening />} />
+            <Route
+              path="/positions/:id/review"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"]}
+                >
+                  <ReviewScreening />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Candidate Routes */}
-            <Route path="/candidates" element={<CandidatesList />} />
-            <Route path="/candidates/add" element={<AddCandidate />} />
+            <Route
+              path="/candidates"
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "ADMIN",
+                    "SUPER_ADMIN",
+                    "RECRUITER",
+                    "HR",
+                    "REVIEWER",
+                    "VIEWER",
+                  ]}
+                >
+                  <CandidatesList />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/candidates/add"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "RECRUITER", "HR"]}
+                >
+                  <AddCandidate />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/candidates/:candidateId"
-              element={<CandidateDetails />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={[
+                    "ADMIN",
+                    "SUPER_ADMIN",
+                    "RECRUITER",
+                    "HR",
+                    "REVIEWER",
+                    "VIEWER",
+                  ]}
+                >
+                  <CandidateDetails />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/candidates/:candidateId/edit"
-              element={<AddCandidate />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "RECRUITER", "HR"]}
+                >
+                  <AddCandidate />
+                </ProtectedRoute>
+              }
             />
 
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/recruiter/dashboard"
-              element={<RecruiterDashboard />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={["RECRUITER", "ADMIN", "SUPER_ADMIN"]}
+                >
+                  <RecruiterDashboard />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/hr/dashboard" element={<HRDashboard />} />
+            <Route
+              path="/hr/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={["HR", "ADMIN", "SUPER_ADMIN"]}>
+                  <HRDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/interviewer/dashboard"
-              element={<InterviewerDashboard />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={["INTERVIEWER", "ADMIN", "SUPER_ADMIN"]}
+                >
+                  <InterviewerDashboard />
+                </ProtectedRoute>
+              }
             />
-            <Route path="/reviewer/dashboard" element={<ReviewerDashboard />} />
-            <Route path="/viewer/dashboard" element={<ViewerDashboard />} />
+            <Route
+              path="/reviewer/dashboard"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["REVIEWER", "ADMIN", "SUPER_ADMIN", "HR"]}
+                >
+                  <ReviewerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/viewer/dashboard"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["VIEWER", "ADMIN", "SUPER_ADMIN"]}
+                >
+                  <ViewerDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/interviews/manage"
-              element={<InterviewManagement />}
+              element={
+                <ProtectedRoute
+                  allowedRoles={["ADMIN", "SUPER_ADMIN", "HR", "RECRUITER"]}
+                >
+                  <InterviewManagement />
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </div>

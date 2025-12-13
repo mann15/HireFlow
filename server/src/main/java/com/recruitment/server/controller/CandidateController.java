@@ -5,6 +5,7 @@ import com.recruitment.server.service.CandidateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +26,7 @@ public class CandidateController {
 
     // Create candidate profile manually
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> createCandidate(@RequestBody Candidate candidate) {
         try {
             Candidate createdCandidate = candidateService.createCandidate(candidate);
@@ -38,6 +40,7 @@ public class CandidateController {
 
     // Upload CV for candidate
     @PostMapping("/{candidateId}/cv")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> uploadCV(@PathVariable Long candidateId,
             @RequestParam(required = false) Long positionId,
             @RequestParam("file") MultipartFile file) {
@@ -59,6 +62,7 @@ public class CandidateController {
 
     // Bulk upload candidates from Excel
     @PostMapping("/bulk-upload")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> bulkUploadCandidates(@RequestBody List<Map<String, Object>> candidateData) {
         try {
             List<Candidate> candidates = candidateService.bulkUploadCandidates(candidateData);
@@ -75,6 +79,7 @@ public class CandidateController {
 
     // Create candidate using uploaded CV (no existing candidateId required)
     @PostMapping("/from-cv")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> createCandidateFromCV(@RequestParam(required = false) Long positionId,
             @RequestParam("file") MultipartFile file) {
         try {
@@ -94,6 +99,7 @@ public class CandidateController {
 
     // Add skills to candidate
     @PostMapping("/{candidateId}/skills")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> addCandidateSkill(@PathVariable Long candidateId,
             @RequestBody Map<String, Long> skillData) {
         try {
@@ -112,6 +118,7 @@ public class CandidateController {
 
     // Get all candidates
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','REVIEWER','VIEWER')")
     public ResponseEntity<List<Candidate>> getAllCandidates() {
         List<Candidate> candidates = candidateService.getAllCandidates();
         return ResponseEntity.ok(candidates);
@@ -119,6 +126,7 @@ public class CandidateController {
 
     // Get candidate by ID
     @GetMapping("/{candidateId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','REVIEWER','VIEWER')")
     public ResponseEntity<?> getCandidateById(@PathVariable Long candidateId) {
         Optional<Candidate> candidate = candidateService.getCandidateById(candidateId);
         if (candidate.isPresent()) {
@@ -132,6 +140,7 @@ public class CandidateController {
 
     // Search candidates by criteria
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','REVIEWER','VIEWER')")
     public ResponseEntity<List<Candidate>> searchCandidates(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String location,
@@ -147,6 +156,7 @@ public class CandidateController {
 
     // Find candidates matching job requirements
     @GetMapping("/for-position/{positionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','REVIEWER','VIEWER')")
     public ResponseEntity<?> findCandidatesForPosition(@PathVariable Long positionId) {
         try {
             List<Candidate> candidates = candidateService.findCandidatesForPosition(positionId);
@@ -160,6 +170,7 @@ public class CandidateController {
 
     // Update candidate profile
     @PutMapping("/{candidateId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> updateCandidate(@PathVariable Long candidateId, @RequestBody Candidate updatedCandidate) {
         try {
             Candidate candidate = candidateService.updateCandidate(candidateId, updatedCandidate);
@@ -173,6 +184,7 @@ public class CandidateController {
 
     // Deactivate candidate
     @DeleteMapping("/{candidateId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> deactivateCandidate(@PathVariable Long candidateId) {
         try {
             candidateService.deactivateCandidate(candidateId);
@@ -188,6 +200,7 @@ public class CandidateController {
 
     // Get candidate's CVs
     @GetMapping("/{candidateId}/cvs")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','VIEWER')")
     public ResponseEntity<List<CandidateCV>> getCandidateCVs(@PathVariable Long candidateId) {
         List<CandidateCV> cvs = candidateService.getCandidateCVs(candidateId);
         return ResponseEntity.ok(cvs);
@@ -195,6 +208,7 @@ public class CandidateController {
 
     // Get candidate's skills
     @GetMapping("/{candidateId}/skills")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','VIEWER')")
     public ResponseEntity<List<CandidateSkills>> getCandidateSkills(@PathVariable Long candidateId) {
         List<CandidateSkills> skills = candidateService.getCandidateSkills(candidateId);
         return ResponseEntity.ok(skills);
@@ -202,18 +216,43 @@ public class CandidateController {
 
     // Link a candidate to a position (create application)
     @PostMapping("/{candidateId}/apply")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> applyCandidateToPosition(@PathVariable Long candidateId,
             @RequestBody Map<String, Object> body) {
         try {
-            Long positionId = body.get("positionId") instanceof Number ? ((Number) body.get("positionId")).longValue()
-                    : body.get("positionId") != null ? Long.parseLong(body.get("positionId").toString()) : null;
+            // Safely parse positionId
+            Long positionId = null;
+            Object positionIdObj = body.get("positionId");
+            if (positionIdObj != null) {
+                if (positionIdObj instanceof Number) {
+                    positionId = ((Number) positionIdObj).longValue();
+                } else {
+                    try {
+                        positionId = Long.parseLong(positionIdObj.toString());
+                    } catch (NumberFormatException e) {
+                        positionId = null;
+                    }
+                }
+            }
 
-            Long cvId = body.get("cvId") instanceof Number ? ((Number) body.get("cvId")).longValue()
-                    : body.get("cvId") != null ? Long.parseLong(body.get("cvId").toString()) : null;
+            // Safely parse cvId
+            Long cvId = null;
+            Object cvIdObj = body.get("cvId");
+            if (cvIdObj != null) {
+                if (cvIdObj instanceof Number) {
+                    cvId = ((Number) cvIdObj).longValue();
+                } else {
+                    try {
+                        cvId = Long.parseLong(cvIdObj.toString());
+                    } catch (NumberFormatException e) {
+                        cvId = null;
+                    }
+                }
+            }
 
             if (positionId == null) {
                 Map<String, String> error = new HashMap<>();
-                error.put("error", "positionId is required");
+                error.put("error", "positionId is required and must be a valid number");
                 return ResponseEntity.badRequest().body(error);
             }
 
@@ -222,6 +261,20 @@ public class CandidateController {
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Failed to create application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    // Get candidates matching a position with match score
+    @GetMapping("/matching/{positionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','REVIEWER','VIEWER')")
+    public ResponseEntity<?> getMatchingCandidates(@PathVariable Long positionId) {
+        try {
+            List<Map<String, Object>> matchingCandidates = candidateService.getCandidatesWithMatchScore(positionId);
+            return ResponseEntity.ok(matchingCandidates);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get matching candidates: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }

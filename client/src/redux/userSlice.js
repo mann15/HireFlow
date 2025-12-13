@@ -17,8 +17,11 @@ const userSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action) => {
+      const role = action.payload?.role
+        ? action.payload.role.toUpperCase()
+        : action.payload?.role;
       state.loading = false;
-      state.currentUser = action.payload;
+      state.currentUser = { ...action.payload, role };
       state.isAuthenticated = true;
       state.error = null;
     },
@@ -32,8 +35,11 @@ const userSlice = createSlice({
       state.error = null;
     },
     signupSuccess: (state, action) => {
+      const role = action.payload?.role
+        ? action.payload.role.toUpperCase()
+        : action.payload?.role;
       state.loading = false;
-      state.currentUser = action.payload;
+      state.currentUser = { ...action.payload, role };
       state.isAuthenticated = true;
       state.error = null;
     },

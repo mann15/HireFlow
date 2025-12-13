@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import logo from "/logo.png";
 import { logout } from "../services/authService";
+import NotificationBell from "./notifications/NotificationBell";
 
 const Navbar = () => {
   const location = useLocation();
@@ -31,6 +32,7 @@ const Navbar = () => {
 
     switch (role) {
       case "ADMIN":
+      case "SUPER_ADMIN":
         return [
           { name: "Dashboard", path: "/admin/dashboard" },
           { name: "Positions", path: "/positions" },
@@ -119,9 +121,10 @@ const Navbar = () => {
           </div>
         )}
 
-        <div className="flex space-x-4">
+        <div className="flex items-center space-x-4">
           {isAuthenticated ? (
             <>
+              <NotificationBell />
               <div className="flex items-center mr-4">
                 <span className="font-medium">Hi, {userName}</span>
                 {currentUser?.role && (

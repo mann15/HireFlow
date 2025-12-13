@@ -21,14 +21,14 @@ public class ApplicationController {
     private final UserRepository userRepository;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> createApplication(@RequestBody Map<String, Object> applicationData) {
         try {
             Long candidateId = Long.valueOf(applicationData.get("candidateId").toString());
             Long positionId = Long.valueOf(applicationData.get("positionId").toString());
-            Long cvId = applicationData.get("cvId") != null 
-                ? Long.valueOf(applicationData.get("cvId").toString())
-                : null;
+            Long cvId = applicationData.get("cvId") != null
+                    ? Long.valueOf(applicationData.get("cvId").toString())
+                    : null;
 
             JobApplication application = applicationService.createApplication(candidateId, positionId, cvId);
             return ResponseEntity.ok(application);
@@ -51,7 +51,7 @@ public class ApplicationController {
                 applications = applicationService.getApplicationsByCandidate(candidateId);
             } else if (status != null) {
                 applications = applicationService.getApplicationsByStatus(
-                    JobApplication.Status.valueOf(status));
+                        JobApplication.Status.valueOf(status));
             } else {
                 applications = applicationService.getAllApplications();
             }
@@ -74,7 +74,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> updateApplicationStatus(@PathVariable Long applicationId,
             @RequestBody Map<String, String> statusData,
             Authentication authentication) {
@@ -98,7 +98,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/hold")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> moveToHold(@PathVariable Long applicationId,
             @RequestParam String reason,
             Authentication authentication) {
@@ -114,7 +114,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> rejectApplication(@PathVariable Long applicationId,
             @RequestParam String reason,
             Authentication authentication) {
@@ -130,7 +130,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/move-to-screening")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> moveToScreening(@PathVariable Long applicationId,
             Authentication authentication) {
         try {
@@ -145,7 +145,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/move-to-interview")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'REVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','REVIEWER')")
     public ResponseEntity<?> moveToInterview(@PathVariable Long applicationId,
             Authentication authentication) {
         try {
@@ -160,7 +160,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/select")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECRUITER', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> selectCandidate(@PathVariable Long applicationId,
             Authentication authentication) {
         try {
@@ -175,7 +175,7 @@ public class ApplicationController {
     }
 
     @DeleteMapping("/{applicationId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     public ResponseEntity<?> deleteApplication(@PathVariable Long applicationId) {
         try {
             applicationService.deleteApplication(applicationId);

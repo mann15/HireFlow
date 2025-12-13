@@ -9,6 +9,7 @@ import {
   updatePositionSkills,
   getApplicationsByPosition,
 } from "../../services/positionService";
+import { selectCandidate } from "../../services/applicationService";
 import Loader from "../../components/Loader";
 
 const EditPosition = () => {
@@ -16,7 +17,6 @@ const EditPosition = () => {
   const [position, setPosition] = useState(null);
   const [skills, setSkills] = useState({ required: [], preferred: [] });
   const [statusReason, setStatusReason] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState("");
   const [applications, setApplications] = useState([]);
   const [selectedCandidates, setSelectedCandidates] = useState([]); // multi-select
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,17 @@ const EditPosition = () => {
         try {
           const apps = await getApplicationsByPosition(id);
           setApplications(apps || []);
+
+          // pre-select the candidate if the position already has one recorded
+          if (p?.selectedCandidate && Array.isArray(apps)) {
+            const matched = apps.find(
+              (a) =>
+                a?.candidate?.candidateId === p.selectedCandidate.candidateId
+            );
+            if (matched?.applicationId) {
+              setSelectedCandidates([String(matched.applicationId)]);
+            }
+          }
         } catch (aErr) {
           console.warn("Failed to load applications for position", aErr);
         }
@@ -80,12 +91,17 @@ const EditPosition = () => {
         if (position.status === "ON_HOLD") {
           await updatePositionStatus(id, "ON_HOLD", statusReason);
         } else if (position.status === "CLOSED") {
-          const selected =
-            selectedCandidates && selectedCandidates.length > 0
-              ? selectedCandidates.join(",")
-              : (selectedCandidate && selectedCandidate.trim()) || null;
+          const selectedIds = (selectedCandidates || []).filter(Boolean);
+
+          if (selectedIds.length > 0) {
+            // mark selected applications so the position tracks the chosen candidate
+            await Promise.all(
+              selectedIds.map((appId) => selectCandidate(Number(appId)))
+            );
+          }
+
           await closePosition(id, {
-            selectedCandidate: selected,
+            selectedCandidate: selectedIds.join(",") || null,
             reason: statusReason,
           });
         }
@@ -190,6 +206,153 @@ const EditPosition = () => {
             required
             placeholder="Enter detailed job description"
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Department
+            </label>
+            <input
+              type="text"
+              value={position.department || ""}
+              onChange={(e) =>
+                setPosition({ ...position, department: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="e.g., Engineering, Marketing, Sales"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Employment Type
+            </label>
+            <select
+              value={position.employmentType || "FULL_TIME"}
+              onChange={(e) =>
+                setPosition({ ...position, employmentType: e.target.value })
+              }
+              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="FULL_TIME">Full Time</option>
+              <option value="PART_TIME">Part Time</option>
+              <option value="CONTRACT">Contract</option>
+              <option value="INTERNSHIP">Internship</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Minimum Experience (years)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={position.experienceRequiredMin || 0}
+              onChange={(e) =>
+                setPosition({
+                  ...position,
+                  experienceRequiredMin: Number(e.target.value),
+                })
+              }
+              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="0"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Maximum Experience (years)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={position.experienceRequiredMax || 0}
+              onChange={(e) =>
+                setPosition({
+                  ...position,
+                  experienceRequiredMax: Number(e.target.value),
+                })
+              }
+              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="5"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Minimum Salary
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={position.salaryMin || ""}
+                onChange={(e) =>
+                  setPosition({
+                    ...position,
+                    salaryMin: e.target.value
+                      ? parseFloat(e.target.value)
+                      : null,
+                  })
+                }
+                className="w-full border border-gray-300 rounded-md shadow-sm pl-8 pr-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="50000"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Maximum Salary
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                value={position.salaryMax || ""}
+                onChange={(e) =>
+                  setPosition({
+                    ...position,
+                    salaryMax: e.target.value
+                      ? parseFloat(e.target.value)
+                      : null,
+                  })
+                }
+                className="w-full border border-gray-300 rounded-md shadow-sm pl-8 pr-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="80000"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Total Positions
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={position.totalPositions || 1}
+              onChange={(e) =>
+                setPosition({
+                  ...position,
+                  totalPositions: Number(e.target.value),
+                })
+              }
+              className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="1"
+            />
+          </div>
         </div>
 
         <div className="space-y-4">

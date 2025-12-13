@@ -25,7 +25,7 @@ public class JobOfferController {
     private final UserRepository userRepository;
 
     @PostMapping("/generate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> generateOffer(@RequestBody Map<String, Object> offerData,
             Authentication authentication) {
         try {
@@ -49,7 +49,7 @@ public class JobOfferController {
     }
 
     @PutMapping("/{offerId}/send")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> sendOffer(@PathVariable Long offerId) {
         try {
             JobOffers offer = jobOfferService.sendOffer(offerId);
@@ -60,7 +60,7 @@ public class JobOfferController {
     }
 
     @PutMapping("/{offerId}/accept")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'CANDIDATE')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','CANDIDATE')")
     public ResponseEntity<?> acceptOffer(@PathVariable Long offerId) {
         try {
             JobOffers offer = jobOfferService.acceptOffer(offerId);
@@ -71,7 +71,7 @@ public class JobOfferController {
     }
 
     @PutMapping("/{offerId}/reject")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'CANDIDATE')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','CANDIDATE')")
     public ResponseEntity<?> rejectOffer(@PathVariable Long offerId,
             @RequestParam String reason) {
         try {
@@ -83,7 +83,7 @@ public class JobOfferController {
     }
 
     @PutMapping("/{offerId}/withdraw")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
     public ResponseEntity<?> withdrawOffer(@PathVariable Long offerId) {
         try {
             JobOffers offer = jobOfferService.withdrawOffer(offerId);
@@ -116,7 +116,7 @@ public class JobOfferController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
     public ResponseEntity<?> getOffers(@RequestParam(required = false) String status) {
         try {
             List<JobOffers> offers;

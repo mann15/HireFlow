@@ -1,96 +1,123 @@
 import React, { useState } from "react";
-import {
-  defineInterviewRounds,
-  scheduleInterview,
-  simulateOnlineInterview,
-  scheduleBulkInterviews,
-} from "../../services/interviewService";
+import DefineInterviewRounds from "../../components/interviews/DefineInterviewRounds";
+import ScheduleInterview from "../../components/interviews/ScheduleInterview";
+import BulkInterviewScheduler from "../../components/interviews/BulkInterviewScheduler";
 
 const InterviewManagement = () => {
-  const [roundsData, setRoundsData] = useState("");
-  const [scheduleData, setScheduleData] = useState("");
-  const [candidateId, setCandidateId] = useState("");
-  const [bulkData, setBulkData] = useState("");
-
-  const handleDefineRounds = async () => {
-    try {
-      await defineInterviewRounds(roundsData);
-      alert("Interview rounds defined successfully");
-    } catch (error) {
-      console.error("Failed to define interview rounds", error);
-    }
-  };
-
-  const handleScheduleInterview = async () => {
-    try {
-      await scheduleInterview(scheduleData);
-      alert("Interview scheduled successfully");
-    } catch (error) {
-      console.error("Failed to schedule interview", error);
-    }
-  };
-
-  const handleSimulateOnlineInterview = async () => {
-    try {
-      const result = await simulateOnlineInterview(candidateId);
-      alert(`Candidate ${result.candidateId} scored ${result.marks} marks`);
-    } catch (error) {
-      console.error("Failed to simulate online interview", error);
-    }
-  };
-
-  const handleScheduleBulkInterviews = async () => {
-    try {
-      await scheduleBulkInterviews(bulkData);
-      alert("Bulk interviews scheduled successfully");
-    } catch (error) {
-      console.error("Failed to schedule bulk interviews", error);
-    }
-  };
+  const [positionId, setPositionId] = useState("");
+  const [applicationId, setApplicationId] = useState("");
+  const [candidateName, setCandidateName] = useState("");
 
   return (
-    <div className="interview-management">
-      <h1>Interview Management</h1>
+    <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-6">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <header>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Interview Scheduling & Process
+          </h1>
+          <p className="text-gray-600">
+            Define default rounds (or candidate-specific overrides), schedule
+            panel interviews, record pre-interview online tests, and plan bulk
+            hiring events.
+          </p>
+        </header>
 
-      <div>
-        <h2>Define Interview Rounds</h2>
-        <textarea
-          placeholder="Rounds Data"
-          value={roundsData}
-          onChange={(e) => setRoundsData(e.target.value)}
-        ></textarea>
-        <button onClick={handleDefineRounds}>Define Rounds</button>
-      </div>
+        <section className="bg-white rounded-lg shadow p-6 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Default & Candidate-Specific Rounds
+              </h2>
+              <p className="text-sm text-gray-600">
+                Set the number and types of rounds for a position, or override
+                for specific candidates.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700">Position ID</label>
+              <input
+                type="number"
+                min="1"
+                value={positionId}
+                onChange={(e) => setPositionId(e.target.value)}
+                className="w-36 border border-gray-300 rounded-md px-3 py-2"
+                placeholder="e.g., 12"
+              />
+            </div>
+          </div>
 
-      <div>
-        <h2>Schedule Interview</h2>
-        <textarea
-          placeholder="Schedule Data"
-          value={scheduleData}
-          onChange={(e) => setScheduleData(e.target.value)}
-        ></textarea>
-        <button onClick={handleScheduleInterview}>Schedule</button>
-      </div>
+          {positionId ? (
+            <DefineInterviewRounds positionId={positionId} />
+          ) : (
+            <p className="text-sm text-gray-500">
+              Enter a position ID to configure rounds.
+            </p>
+          )}
+        </section>
 
-      <div>
-        <h2>Simulate Online Interview</h2>
-        <input
-          type="text"
-          placeholder="Candidate ID"
-          value={candidateId}
-          onChange={(e) => setCandidateId(e.target.value)}
-        />
-        <button onClick={handleSimulateOnlineInterview}>Simulate</button>
-      </div>
+        <section className="bg-white rounded-lg shadow p-6 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Schedule a Single Interview
+              </h2>
+              <p className="text-sm text-gray-600">
+                Supports panel interviews and invites. Optionally mark an online
+                examination as scheduled before the interview.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Application ID</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={applicationId}
+                  onChange={(e) => setApplicationId(e.target.value)}
+                  className="w-32 border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., 45"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Position ID</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={positionId}
+                  onChange={(e) => setPositionId(e.target.value)}
+                  className="w-32 border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="e.g., 12"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-700">Candidate Name</label>
+                <input
+                  type="text"
+                  value={candidateName}
+                  onChange={(e) => setCandidateName(e.target.value)}
+                  className="w-48 border border-gray-300 rounded-md px-3 py-2"
+                  placeholder="Optional display name"
+                />
+              </div>
+            </div>
+          </div>
 
-      <div>
-        <h2>Schedule Bulk Interviews</h2>
-        <textarea
-          placeholder="Bulk Data"
-          value={bulkData}
-          onChange={(e) => setBulkData(e.target.value)}
-        ></textarea>
-        <button onClick={handleScheduleBulkInterviews}>Schedule Bulk</button>
+          {applicationId && positionId ? (
+            <ScheduleInterview
+              applicationId={applicationId}
+              positionId={positionId}
+              candidateName={candidateName}
+            />
+          ) : (
+            <p className="text-sm text-gray-500">
+              Provide both application ID and position ID to schedule.
+            </p>
+          )}
+        </section>
+
+        <section>
+          <BulkInterviewScheduler />
+        </section>
       </div>
     </div>
   );

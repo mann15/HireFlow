@@ -191,4 +191,16 @@ export const candidateService = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Get candidates matching a position
+  getMatchingCandidates: async (positionId) => {
+    try {
+      const response = await axios.get(
+        `${CANDIDATE_API_BASE_URL}/matching/${positionId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };

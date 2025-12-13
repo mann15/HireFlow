@@ -4,8 +4,7 @@ import { Link } from "react-router-dom";
 const PositionCard = ({ position }) => {
   const formatSalary = (min, max) => {
     if (!min && !max) return "Salary not specified";
-    if (min && max)
-      return `${min.toLocaleString()} - ${max.toLocaleString()}`;
+    if (min && max) return `${min.toLocaleString()} - ${max.toLocaleString()}`;
     if (min) return `From ${min.toLocaleString()}`;
     if (max) return `Up to ${max.toLocaleString()}`;
   };
@@ -120,6 +119,22 @@ const PositionCard = ({ position }) => {
             </Link>
           </div>
         </div>
+
+        {position.selectedCandidate && (
+          <div className="mt-4 p-3 bg-green-50 rounded-md">
+            <p className="text-xs text-gray-700">
+              <span className="font-medium">Selected Candidate:</span>{" "}
+              {position.selectedCandidate.firstName}{" "}
+              {position.selectedCandidate.lastName}
+              {position.selectedCandidate.email && (
+                <span className="text-gray-600">
+                  {" "}
+                  — {position.selectedCandidate.email}
+                </span>
+              )}
+            </p>
+          </div>
+        )}
 
         {position.closureReason && (
           <div className="mt-4 p-3 bg-gray-50 rounded-md">

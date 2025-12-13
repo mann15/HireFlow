@@ -7,6 +7,7 @@ import com.recruitment.server.model.Role;
 import com.recruitment.server.repository.UserRepository;
 import com.recruitment.server.repository.RoleRepository;
 import com.recruitment.server.security.JwtUtil;
+import com.recruitment.server.security.Roles;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import com.recruitment.server.service.CustomUserDetailsService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -55,9 +57,9 @@ public class AuthController {
         }
 
         // Always assign default role
-        Role role = roleRepo.findByRoleName("USER");
+        Role role = roleRepo.findByRoleName(Roles.CANDIDATE);
         if (role == null) {
-            role = Role.builder().roleName("USER").build();
+            role = Role.builder().roleName(Roles.CANDIDATE).build();
             roleRepo.save(role);
         }
         user.setRole(role);
@@ -75,8 +77,9 @@ public class AuthController {
         AuthResponse authResponse = new AuthResponse(
                 user.getFirstName() + " " + user.getLastName(),
                 user.getEmail(),
-                role.getRoleName(),
-                user.getUserId());
+                role.getRoleName().toUpperCase(),
+                user.getUserId(),
+                false);
         return ResponseEntity.ok(authResponse);
     }
 
@@ -96,11 +99,14 @@ public class AuthController {
 
             response.addCookie(createJwtCookie(token, expiresAt, request.isSecure()));
 
-            return ResponseEntity.ok(new AuthResponse(
+            AuthResponse authResponse = new AuthResponse(
                     user.getFirstName() + " " + user.getLastName(),
                     user.getEmail(),
-                    user.getRole().getRoleName(),
-                    user.getUserId()));
+                    user.getRole().getRoleName().toUpperCase(),
+                    user.getUserId(),
+                    user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange());
+
+            return ResponseEntity.ok(authResponse);
         } catch (BadCredentialsException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
         }
@@ -125,8 +131,9 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(
                 user.getFirstName() + " " + user.getLastName(),
                 user.getEmail(),
-                user.getRole().getRoleName(),
-                user.getUserId()));
+                user.getRole().getRoleName().toUpperCase(),
+                user.getUserId(),
+                user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange()));
     }
 
     @PostMapping("/logout")
@@ -157,10 +164,41 @@ public class AuthController {
         AuthResponse authResponse = new AuthResponse(
                 user.getFirstName() + " " + user.getLastName(),
                 user.getEmail(),
-                user.getRole().getRoleName(),
-                user.getUserId());
+                user.getRole().getRoleName().toUpperCase(),
+                user.getUserId(),
+                user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange());
 
         return ResponseEntity.ok(authResponse);
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+
+        String email = authentication.getName();
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String newPassword = request.get("newPassword");
+        if (newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body("New password is required");
+        }
+
+        // Update password and clear requiresPasswordChange flag
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setRequiresPasswordChange(false);
+        user.setUpdatedAt(java.time.LocalDateTime.now());
+        userRepo.save(user);
+
+        return ResponseEntity.ok(new java.util.HashMap<String, String>() {
+            {
+                put("message", "Password changed successfully");
+            }
+        });
     }
 
     private Cookie createJwtCookie(String token, long expiresAt, boolean secure) {
