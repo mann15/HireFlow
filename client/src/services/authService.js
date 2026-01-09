@@ -7,6 +7,7 @@ import {
   signupFailure,
   logout as logoutAction,
   setGlobalLoading,
+  setAuthCheckComplete,
 } from "../redux/userSlice";
 import { loginApi, signupApi, verifyTokenApi } from "../api/authApi";
 import api from "../api/axios";
@@ -56,7 +57,6 @@ export const signup = (userData) => async (dispatch) => {
 export const checkAuth = () => async (dispatch) => {
   try {
     console.log("Checking auth...");
-    dispatch(loginStart());
     dispatch(setGlobalLoading(true));
     const data = await verifyTokenApi();
     dispatch(loginSuccess(data));
@@ -64,6 +64,7 @@ export const checkAuth = () => async (dispatch) => {
     dispatch(loginFailure(null));
   } finally {
     dispatch(setGlobalLoading(false));
+    dispatch(setAuthCheckComplete(true));
   }
 };
 

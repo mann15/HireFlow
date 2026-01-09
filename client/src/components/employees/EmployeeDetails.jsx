@@ -5,6 +5,11 @@ import {
   relieveEmployee,
 } from "../../services/employeeService";
 import { format } from "date-fns";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const EmployeeDetails = ({ employeeId }) => {
   const [employee, setEmployee] = useState(null);
@@ -41,11 +46,11 @@ const EmployeeDetails = ({ employeeId }) => {
   const handleUpdate = async () => {
     try {
       await updateEmployee(employeeId, editData);
-      alert("Employee updated successfully!");
+      showSuccess("Employee updated successfully!");
       setEditing(false);
       await fetchEmployee();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to update employee");
+      showError(getErrorMessage(err, "Failed to update employee"));
     }
   };
 
@@ -56,11 +61,11 @@ const EmployeeDetails = ({ employeeId }) => {
         relieveData.relievingDate,
         relieveData.notes
       );
-      alert("Employee relieved successfully!");
+      showSuccess("Employee relieved successfully!");
       setRelieveModal(false);
       await fetchEmployee();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to relieve employee");
+      showError(getErrorMessage(err, "Failed to relieve employee"));
     }
   };
 

@@ -1,12 +1,12 @@
-import axios from "axios";
+import api from "../api/axios";
 
-const CANDIDATE_API_BASE_URL = "/api/candidates";
+const CANDIDATE_API_BASE_URL = "/candidates";
 
 export const candidateService = {
   // Create candidate profile manually
   createCandidate: async (candidateData) => {
     try {
-      const response = await axios.post(CANDIDATE_API_BASE_URL, candidateData);
+      const response = await api.post(CANDIDATE_API_BASE_URL, candidateData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -18,9 +18,11 @@ export const candidateService = {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("positionId", positionId);
+      if (positionId) {
+        formData.append("positionId", positionId);
+      }
 
-      const response = await axios.post(
+      const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/cv`,
         formData,
         {
@@ -38,7 +40,7 @@ export const candidateService = {
   // Bulk upload candidates from Excel
   bulkUploadCandidates: async (candidateData) => {
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/bulk-upload`,
         candidateData
       );
@@ -51,7 +53,7 @@ export const candidateService = {
   // Add skills to candidate
   addCandidateSkill: async (candidateId, skillId, proficiencyLevelId) => {
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`,
         {
           skillId,
@@ -67,9 +69,30 @@ export const candidateService = {
   // Get all candidates
   getAllCandidates: async () => {
     try {
-      const response = await axios.get(CANDIDATE_API_BASE_URL);
-      return response.data;
+      const response = await api.get(CANDIDATE_API_BASE_URL);
+      console.log("getAllCandidates response:", response.data);
+
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (
+        response.data &&
+        response.data.candidates &&
+        Array.isArray(response.data.candidates)
+      ) {
+        return response.data.candidates;
+      } else if (
+        response.data &&
+        response.data.data &&
+        Array.isArray(response.data.data)
+      ) {
+        return response.data.data;
+      } else {
+        console.warn("Unexpected response format:", response.data);
+        return [];
+      }
     } catch (error) {
+      console.error("Error fetching candidates:", error);
       throw error.response?.data || error.message;
     }
   },
@@ -77,7 +100,7 @@ export const candidateService = {
   // Get candidate by ID
   getCandidateById: async (candidateId) => {
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${CANDIDATE_API_BASE_URL}/${candidateId}`
       );
       return response.data;
@@ -89,11 +112,32 @@ export const candidateService = {
   // Search candidates by criteria
   searchCandidates: async (searchParams) => {
     try {
-      const response = await axios.get(`${CANDIDATE_API_BASE_URL}/search`, {
+      const response = await api.get(`${CANDIDATE_API_BASE_URL}/search`, {
         params: searchParams,
       });
-      return response.data;
+      console.log("searchCandidates response:", response.data);
+
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (
+        response.data &&
+        response.data.candidates &&
+        Array.isArray(response.data.candidates)
+      ) {
+        return response.data.candidates;
+      } else if (
+        response.data &&
+        response.data.data &&
+        Array.isArray(response.data.data)
+      ) {
+        return response.data.data;
+      } else {
+        console.warn("Unexpected response format:", response.data);
+        return [];
+      }
     } catch (error) {
+      console.error("Error searching candidates:", error);
       throw error.response?.data || error.message;
     }
   },
@@ -101,11 +145,32 @@ export const candidateService = {
   // Find candidates matching job requirements
   findCandidatesForPosition: async (positionId) => {
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${CANDIDATE_API_BASE_URL}/for-position/${positionId}`
       );
-      return response.data;
+      console.log("findCandidatesForPosition response:", response.data);
+
+      // Handle different response formats
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (
+        response.data &&
+        response.data.candidates &&
+        Array.isArray(response.data.candidates)
+      ) {
+        return response.data.candidates;
+      } else if (
+        response.data &&
+        response.data.data &&
+        Array.isArray(response.data.data)
+      ) {
+        return response.data.data;
+      } else {
+        console.warn("Unexpected response format:", response.data);
+        return [];
+      }
     } catch (error) {
+      console.error("Error finding candidates for position:", error);
       throw error.response?.data || error.message;
     }
   },
@@ -113,7 +178,7 @@ export const candidateService = {
   // Update candidate profile
   updateCandidate: async (candidateId, candidateData) => {
     try {
-      const response = await axios.put(
+      const response = await api.put(
         `${CANDIDATE_API_BASE_URL}/${candidateId}`,
         candidateData
       );
@@ -126,7 +191,7 @@ export const candidateService = {
   // Deactivate candidate
   deactivateCandidate: async (candidateId) => {
     try {
-      const response = await axios.delete(
+      const response = await api.delete(
         `${CANDIDATE_API_BASE_URL}/${candidateId}`
       );
       return response.data;
@@ -138,7 +203,7 @@ export const candidateService = {
   // Get candidate's CVs
   getCandidateCVs: async (candidateId) => {
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/cvs`
       );
       return response.data;
@@ -150,7 +215,7 @@ export const candidateService = {
   // Get candidate's skills
   getCandidateSkills: async (candidateId) => {
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`
       );
       return response.data;
@@ -162,7 +227,7 @@ export const candidateService = {
   // Link candidate to a position (create application)
   linkCandidateToPosition: async (candidateId, positionId, cvId) => {
     try {
-      const response = await axios.post(
+      const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/apply`,
         { positionId, cvId }
       );
@@ -179,7 +244,7 @@ export const candidateService = {
       formData.append("file", file);
       if (positionId) formData.append("positionId", positionId);
 
-      const response = await axios.post(
+      const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/from-cv`,
         formData,
         {
@@ -195,7 +260,7 @@ export const candidateService = {
   // Get candidates matching a position
   getMatchingCandidates: async (positionId) => {
     try {
-      const response = await axios.get(
+      const response = await api.get(
         `${CANDIDATE_API_BASE_URL}/matching/${positionId}`
       );
       return response.data;

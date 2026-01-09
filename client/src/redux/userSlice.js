@@ -6,6 +6,23 @@ const initialState = {
   error: null,
   isAuthenticated: false,
   globalLoading: false,
+  authCheckComplete: false,
+};
+
+const normalizeUserPayload = (payload) => {
+  const role = payload?.role ? payload.role.toUpperCase() : payload?.role;
+  const id =
+    payload?.id ??
+    payload?.userId ??
+    payload?.user?.userId ??
+    payload?.user?.id;
+  const userId =
+    payload?.userId ??
+    payload?.id ??
+    payload?.user?.userId ??
+    payload?.user?.id;
+  const name = payload?.name || `${payload?.firstName || ""} ${payload?.lastName || ""}`.trim() || payload?.email || "User";
+  return { ...payload, role, id, userId, name };
 };
 
 const userSlice = createSlice({
@@ -17,11 +34,9 @@ const userSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action) => {
-      const role = action.payload?.role
-        ? action.payload.role.toUpperCase()
-        : action.payload?.role;
+      const normalized = normalizeUserPayload(action.payload);
       state.loading = false;
-      state.currentUser = { ...action.payload, role };
+      state.currentUser = normalized;
       state.isAuthenticated = true;
       state.error = null;
     },
@@ -35,11 +50,9 @@ const userSlice = createSlice({
       state.error = null;
     },
     signupSuccess: (state, action) => {
-      const role = action.payload?.role
-        ? action.payload.role.toUpperCase()
-        : action.payload?.role;
+      const normalized = normalizeUserPayload(action.payload);
       state.loading = false;
-      state.currentUser = { ...action.payload, role };
+      state.currentUser = normalized;
       state.isAuthenticated = true;
       state.error = null;
     },
@@ -60,7 +73,7 @@ const userSlice = createSlice({
     },
     updateProfileSuccess: (state, action) => {
       state.loading = false;
-      state.currentUser = action.payload;
+      state.currentUser = normalizeUserPayload(action.payload);
       state.error = null;
     },
     updateProfileFailure: (state, action) => {
@@ -72,6 +85,9 @@ const userSlice = createSlice({
     },
     setGlobalLoading: (state, action) => {
       state.globalLoading = action.payload;
+    },
+    setAuthCheckComplete: (state, action) => {
+      state.authCheckComplete = action.payload;
     },
   },
 });
@@ -86,6 +102,7 @@ export const {
   logout,
   updateProfileStart,
   updateProfileSuccess,
+  setAuthCheckComplete,
   updateProfileFailure,
   clearError,
   setGlobalLoading,

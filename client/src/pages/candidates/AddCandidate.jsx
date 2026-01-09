@@ -15,6 +15,7 @@ const AddCandidate = () => {
     alternatePhone: "",
     currentLocation: "",
     preferredLocation: "",
+    collegeName: "",
     totalExperience: "",
     currentSalary: "",
     expectedSalary: "",
@@ -87,6 +88,7 @@ const AddCandidate = () => {
               alternatePhone: res.alternatePhone || "",
               currentLocation: res.currentLocation || "",
               preferredLocation: res.preferredLocation || "",
+              collegeName: res.collegeName || "",
               totalExperience: res.totalExperience || "",
               currentSalary: res.currentSalary || "",
               expectedSalary: res.expectedSalary || "",
@@ -228,6 +230,18 @@ const AddCandidate = () => {
                       type="text"
                       name="preferredLocation"
                       value={formData.preferredLocation}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      College Name
+                    </label>
+                    <input
+                      type="text"
+                      name="collegeName"
+                      value={formData.collegeName}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />

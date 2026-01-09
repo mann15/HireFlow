@@ -9,6 +9,12 @@ import {
   confirmJoining,
 } from "../../services/applicationService";
 import { createEmployee } from "../../services/employeeService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+  showWarning,
+} from "../../utils/toastUtils";
 
 // Final selection hub: document verification, background check status,
 // offer issuance, joining confirmation, and hand-off to employee records.
@@ -34,12 +40,11 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
     setSavingBg(true);
     try {
       await updateBackgroundVerification(application.id, bgStatus, bgRemarks);
-      alert("Background verification status updated");
+      showSuccess("Background verification status updated");
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert(
-        err.response?.data?.error ||
-          "Failed to update background verification status"
+      showError(
+        getErrorMessage(err, "Failed to update background verification status")
       );
     } finally {
       setSavingBg(false);
@@ -48,7 +53,7 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
 
   const handleFinalizeSelection = async () => {
     if (!joiningDate) {
-      alert("Please set a joining date before finalizing selection.");
+      showWarning("Please set a joining date before finalizing selection.");
       return;
     }
 
@@ -56,10 +61,10 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
     try {
       await selectCandidate(application.id);
       await confirmJoining(application.id, joiningDate);
-      alert("Candidate marked as selected with joining date.");
+      showSuccess("Candidate marked as selected with joining date.");
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to finalize selection");
+      showError(getErrorMessage(err, "Failed to finalize selection"));
     } finally {
       setSelecting(false);
     }
@@ -67,7 +72,7 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
 
   const handleCreateEmployee = async () => {
     if (!joiningDate) {
-      alert("Set a joining date first.");
+      showWarning("Set a joining date first.");
       return;
     }
     setCreatingEmployee(true);
@@ -81,10 +86,10 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
         salary: application.offerSalary || 0,
         offerId: application.offerId || null,
       });
-      alert("Employee record created and candidate moved to employees.");
+      showSuccess("Employee record created and candidate moved to employees.");
       if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to create employee record");
+      showError(getErrorMessage(err, "Failed to create employee record"));
     } finally {
       setCreatingEmployee(false);
     }

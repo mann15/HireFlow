@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { defineInterviewRounds } from "../../services/interviewService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const DefineInterviewRounds = ({ positionId, onComplete }) => {
   const [rounds, setRounds] = useState([
@@ -119,12 +124,12 @@ const DefineInterviewRounds = ({ positionId, onComplete }) => {
           ? "Candidate-specific interview rounds saved."
           : "Default interview rounds for this position saved."
       );
-      alert("Interview rounds defined successfully!");
+      showSuccess("Interview rounds defined successfully!");
       if (onComplete) onComplete();
     } catch (err) {
-      setError(
-        err.response?.data?.error || "Failed to define interview rounds"
-      );
+      const message = getErrorMessage(err, "Failed to define interview rounds");
+      setError(message);
+      showError(message);
     } finally {
       setLoading(false);
     }

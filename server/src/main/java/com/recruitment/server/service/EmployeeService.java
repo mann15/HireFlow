@@ -21,9 +21,9 @@ public class EmployeeService {
     private final JobOffersRepository jobOffersRepository;
     private final JobApplicationRepository jobApplicationRepository;
 
-    public Employee createEmployeeFromCandidate(Long candidateId, Long positionId, 
+    public Employee createEmployeeFromCandidate(Long candidateId, Long positionId,
             Long offerId, String designation, String department, LocalDate joiningDate) {
-        
+
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new RuntimeException("Candidate not found"));
 
@@ -67,7 +67,7 @@ public class EmployeeService {
         // Update application status to SELECTED and mark as joined
         List<JobApplication> applications = jobApplicationRepository
                 .findByCandidateAndPosition(candidate, position);
-        
+
         if (!applications.isEmpty()) {
             JobApplication application = applications.get(0);
             application.setStatus(JobApplication.Status.SELECTED);

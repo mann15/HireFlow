@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { submitFeedback } from "../../services/interviewService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
   const [formData, setFormData] = useState({
@@ -79,10 +84,12 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
         auto_score: autoScoreEnabled ? autoScore : null,
         scoring_version: autoScoreEnabled ? "v1-standard" : undefined,
       });
-      alert("Feedback submitted successfully!");
+      showSuccess("Feedback submitted successfully!");
       if (onComplete) onComplete();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to submit feedback");
+      const message = getErrorMessage(err, "Failed to submit feedback");
+      setError(message);
+      showError(message);
     } finally {
       setLoading(false);
     }

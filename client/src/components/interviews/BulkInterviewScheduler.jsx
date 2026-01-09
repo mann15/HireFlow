@@ -166,37 +166,37 @@ const BulkInterviewScheduler = () => {
               options={positions.map((pos) => ({
                 value: pos.positionId || pos.id,
                 label: `${pos.jobTitle} (#${pos.positionId || pos.id})`,
-                subtitle: `${pos.department} • ${pos.status || 'OPEN'}`
+                subtitle: `${pos.department} • ${pos.status || "OPEN"}`,
               }))}
               placeholder="Select a position"
               loading={loadingPositions}
               noOptionsText="No positions found"
             />
           </div>
-          
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Event Date
-            </label>
-            <input
-              type="date"
-              value={form.eventDate}
-              onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Start Time
-            </label>
-            <input
-              type="time"
-              value={form.eventTime}
-              onChange={(e) => setForm({ ...form, eventTime: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"/>
-          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Event Date
+          </label>
+          <input
+            type="date"
+            value={form.eventDate}
+            onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Start Time
+          </label>
+          <input
+            type="time"
+            value={form.eventTime}
+            onChange={(e) => setForm({ ...form, eventTime: e.target.value })}
+            className="w-full border border-gray-300 rounded-md px-3 py-2"
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

@@ -1,5 +1,6 @@
 package com.recruitment.server.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -16,6 +17,7 @@ public class DocumentTypes {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(length = 100, nullable = false)
+    @JsonProperty("name")
+    @Column(name = "type_name", length = 100, nullable = false)
     private String name;
 }

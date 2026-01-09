@@ -3,6 +3,7 @@ import {
   createPosition,
   addPositionSkills,
 } from "../../services/positionService";
+import { defineInterviewRounds } from "../../services/interviewService";
 import { useNavigate } from "react-router-dom";
 
 const AddPosition = () => {
@@ -19,6 +20,17 @@ const AddPosition = () => {
   const [preferredSkills, setPreferredSkills] = useState([""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [defineRoundsNow, setDefineRoundsNow] = useState(false);
+  const [interviewRounds, setInterviewRounds] = useState([
+    {
+      roundName: "",
+      roundType: "TECHNICAL",
+      roundOrder: 1,
+      durationMinutes: 60,
+      isMandatory: true,
+      description: "",
+    },
+  ]);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -81,6 +93,21 @@ const AddPosition = () => {
         }
       }
 
+      // Define interview rounds if user chose to do so
+      if (defineRoundsNow && interviewRounds.length > 0) {
+        const validRounds = interviewRounds.filter(
+          (r) => r.roundName && r.roundName.trim()
+        );
+        if (validRounds.length > 0) {
+          try {
+            await defineInterviewRounds(created.positionId, validRounds);
+          } catch (roundErr) {
+            console.error("Failed to define interview rounds", roundErr);
+            // Don't block navigation, just log the error
+          }
+        }
+      }
+
       navigate(`/positions/${created.positionId}`);
     } catch (err) {
       setError(err.message || "Failed to create position");
@@ -120,6 +147,34 @@ const AddPosition = () => {
     const updatedSkills = [...preferredSkills];
     updatedSkills[index] = value;
     setPreferredSkills(updatedSkills);
+  };
+
+  const addInterviewRound = () => {
+    setInterviewRounds([
+      ...interviewRounds,
+      {
+        roundName: "",
+        roundType: "TECHNICAL",
+        roundOrder: interviewRounds.length + 1,
+        durationMinutes: 60,
+        isMandatory: true,
+        description: "",
+      },
+    ]);
+  };
+
+  const removeInterviewRound = (index) => {
+    const newRounds = interviewRounds.filter((_, i) => i !== index);
+    newRounds.forEach((round, i) => {
+      round.roundOrder = i + 1;
+    });
+    setInterviewRounds(newRounds);
+  };
+
+  const updateInterviewRound = (index, field, value) => {
+    const newRounds = [...interviewRounds];
+    newRounds[index][field] = value;
+    setInterviewRounds(newRounds);
   };
 
   return (
@@ -394,6 +449,171 @@ const AddPosition = () => {
                 Add Preferred Skill
               </button>
             </div>
+          </div>
+
+          {/* Interview Rounds Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={defineRoundsNow}
+                  onChange={(e) => setDefineRoundsNow(e.target.checked)}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                Define Interview Rounds Now
+              </label>
+              <p className="text-sm text-gray-500 mt-1 ml-6">
+                You can define interview rounds now or later from the position details page.
+              </p>
+            </div>
+
+            {defineRoundsNow && (
+              <div className="ml-6 space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Interview Rounds Configuration
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Define the number and type of interview rounds for this position.
+                </p>
+
+                {interviewRounds.map((round, index) => (
+                  <div
+                    key={index}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="text-md font-semibold">
+                        Round {round.roundOrder}
+                      </h4>
+                      {interviewRounds.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeInterviewRound(index)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Round Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={round.roundName}
+                          onChange={(e) =>
+                            updateInterviewRound(
+                              index,
+                              "roundName",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="e.g., Technical Round 1"
+                          required={defineRoundsNow}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Round Type *
+                        </label>
+                        <select
+                          value={round.roundType}
+                          onChange={(e) =>
+                            updateInterviewRound(
+                              index,
+                              "roundType",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          required={defineRoundsNow}
+                        >
+                          <option value="TECHNICAL">Technical</option>
+                          <option value="HR">HR</option>
+                          <option value="MANAGERIAL">Managerial</option>
+                          <option value="PANEL">Panel</option>
+                          <option value="BEHAVIORAL">Behavioral</option>
+                          <option value="CODING">Coding</option>
+                          <option value="ONLINE_TEST">Online Test</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Duration (minutes) *
+                        </label>
+                        <input
+                          type="number"
+                          min="15"
+                          step="15"
+                          value={round.durationMinutes}
+                          onChange={(e) =>
+                            updateInterviewRound(
+                              index,
+                              "durationMinutes",
+                              parseInt(e.target.value) || 60
+                            )
+                          }
+                          className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          required={defineRoundsNow}
+                        />
+                      </div>
+
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={round.isMandatory}
+                          onChange={(e) =>
+                            updateInterviewRound(
+                              index,
+                              "isMandatory",
+                              e.target.checked
+                            )
+                          }
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label className="ml-2 text-sm text-gray-700">
+                          Mandatory Round
+                        </label>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={round.description}
+                          onChange={(e) =>
+                            updateInterviewRound(
+                              index,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          rows="2"
+                          placeholder="Describe what this round will cover..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addInterviewRound}
+                  className="px-4 py-2 border border-indigo-600 text-indigo-600 rounded-md hover:bg-indigo-50 text-sm font-medium"
+                >
+                  + Add Another Round
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-6 flex justify-end space-x-4 border-t border-gray-200">

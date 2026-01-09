@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { candidateService } from "../../services/candidateService";
+import api from "../../api/axios";
+import { getApplicationsByPosition } from "../../services/applicationService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const MatchingCandidates = ({ positionId }) => {
   const [candidates, setCandidates] = useState([]);
@@ -21,12 +27,29 @@ const MatchingCandidates = ({ positionId }) => {
   const fetchMatchingCandidates = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/candidates/matching/${positionId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch matching candidates");
+      const { data } = await api.get(`/candidates/matching/${positionId}`);
+
+      // Filter out candidates already linked to this position
+      let linkedCandidateIds = new Set();
+      try {
+        const apps = await getApplicationsByPosition(positionId);
+        const positionCandidates = apps || [];
+        linkedCandidateIds = new Set(
+          positionCandidates
+            .map((p) => p.candidateId ?? p.candidate?.candidateId ?? p.id)
+            .filter(Boolean)
+        );
+      } catch (posErr) {
+        console.warn("Unable to fetch applications for filtering", posErr);
       }
-      const data = await response.json();
-      setCandidates(data);
+
+      // Filter out already linked candidates from matching results
+      const unlinkedMatches = data.filter((item) => {
+        const candidateId = item.candidate?.candidateId ?? item.candidateId;
+        return !linkedCandidateIds.has(candidateId);
+      });
+
+      setCandidates(unlinkedMatches);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -38,19 +61,37 @@ const MatchingCandidates = ({ positionId }) => {
 
   const fetchAllCandidates = async () => {
     try {
-      // If you have an endpoint to get all candidates, use it
-      const response = await fetch("/api/candidates");
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out candidates that are already in matching list
-        const matchingIds = new Set(
-          candidates.map((c) => c.candidate.candidateId)
+      const { data } = await api.get("/candidates");
+      console.log(data);
+      // Collect candidates already linked to this position via applications
+      let linkedCandidateIds = new Set();
+      try {
+        const apps = await getApplicationsByPosition(positionId);
+        console.log(apps);
+        const positionCandidates = apps || [];
+
+        linkedCandidateIds = new Set(
+          positionCandidates
+            .map((p) => p.candidateId ?? p.candidate?.candidateId ?? p.id)
+            .filter(Boolean)
         );
-        const unlinkedCandidates = data.filter(
-          (c) => !matchingIds.has(c.candidateId)
-        );
-        setAllCandidates(unlinkedCandidates);
+      } catch (posErr) {
+        console.warn("Unable to fetch position for linked candidates", posErr);
       }
+
+      // Also exclude candidates already in the matching list
+      const matchingIds = new Set(
+        candidates.map((c) => c.candidate.candidateId)
+      );
+
+      const unlinkedCandidates = data.filter((candidate) => {
+        const candidateId = candidate.candidateId ?? candidate.id;
+        return (
+          !matchingIds.has(candidateId) && !linkedCandidateIds.has(candidateId)
+        );
+      });
+
+      setAllCandidates(unlinkedCandidates);
     } catch (err) {
       console.error("Failed to fetch all candidates:", err);
     }
@@ -83,27 +124,16 @@ const MatchingCandidates = ({ positionId }) => {
       }
 
       // Create application linking candidate to position
-      const response = await fetch(`/api/candidates/${candidateId}/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          positionId: numPositionId,
-        }),
+      const { data } = await api.post(`/candidates/${candidateId}/apply`, {
+        positionId: numPositionId,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to link candidate");
-      }
-
-      const application = await response.json();
-      alert("Candidate linked to position successfully!");
-      // Refresh the list
-      fetchMatchingCandidates();
+      const application = data;
+      showSuccess("Candidate linked to position successfully!");
+      // Refresh the lists to hide newly linked candidates
+      await fetchMatchingCandidates();
+      await fetchAllCandidates();
     } catch (err) {
-      alert("Failed to link candidate: " + err.message);
+      showError(getErrorMessage(err, "Failed to link candidate"));
     } finally {
       setLinking(false);
     }
@@ -133,14 +163,6 @@ const MatchingCandidates = ({ positionId }) => {
       <div className="text-center py-8">
         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         <p className="text-gray-600 mt-2">Finding matching candidates...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        {error}
       </div>
     );
   }

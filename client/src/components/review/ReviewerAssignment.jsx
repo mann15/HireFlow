@@ -4,7 +4,13 @@ import {
   getPositionReviewers,
   removeReviewer,
 } from "../../services/reviewService";
-import { getAllEmployees } from "../../services/employeeService";
+import { userService } from "../../services/apiService";
+import ConfirmationModal from "../common/ConfirmationModal";
+import {
+  showError,
+  showSuccess,
+  getErrorMessage,
+} from "../../utils/toastUtils";
 
 const ReviewerAssignment = ({ positionId }) => {
   const [reviewers, setReviewers] = useState([]);
@@ -13,6 +19,10 @@ const ReviewerAssignment = ({ positionId }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [removeModal, setRemoveModal] = useState({
+    open: false,
+    reviewerId: null,
+  });
 
   useEffect(() => {
     loadData();
@@ -27,16 +37,22 @@ const ReviewerAssignment = ({ positionId }) => {
       const assignedReviewers = await getPositionReviewers(positionId);
       setReviewers(assignedReviewers || []);
 
-      // Load all employees who can be reviewers (HR, Reviewers, Recruiters)
-      const employees = await getAllEmployees();
-      const eligibleReviewers = employees.filter(
-        (emp) =>
-          emp.role &&
-          (emp.role.roleName === "HR" ||
-            emp.role.roleName === "REVIEWER" ||
-            emp.role.roleName === "RECRUITER" ||
-            emp.role.roleName === "INTERVIEWER")
-      );
+      // Load all users and filter by reviewer roles
+      const users = await userService.getUsers();
+      const eligibleReviewers = users.filter((user) => {
+        const hasReviewerRole =
+          user.role &&
+          (user.role.roleName === "HR" ||
+            user.role.roleName === "REVIEWER" ||
+            user.role.roleName === "RECRUITER" ||
+            user.role.roleName === "INTERVIEWER");
+
+        const alreadyAssigned = assignedReviewers.some(
+          (r) => r.reviewerId === user.userId
+        );
+
+        return hasReviewerRole && !alreadyAssigned;
+      });
       setAvailableReviewers(eligibleReviewers);
     } catch (err) {
       console.error("Error loading reviewers:", err);
@@ -61,25 +77,31 @@ const ReviewerAssignment = ({ positionId }) => {
       await assignReviewer(positionId, selectedReviewerId);
       setSelectedReviewerId("");
       await loadData();
+      showSuccess("Reviewer assigned");
     } catch (err) {
       console.error("Error assigning reviewer:", err);
       setError(err.message || "Failed to assign reviewer");
+      showError(getErrorMessage(err, "Failed to assign reviewer"));
     } finally {
       setSaving(false);
     }
   };
 
   const handleRemoveReviewer = async (reviewerId) => {
-    if (!window.confirm("Are you sure you want to remove this reviewer?")) {
-      return;
-    }
+    setRemoveModal({ open: true, reviewerId });
+  };
 
+  const confirmRemoveReviewer = async () => {
     try {
-      await removeReviewer(positionId, reviewerId);
+      await removeReviewer(positionId, removeModal.reviewerId);
       await loadData();
+      showSuccess("Reviewer removed");
     } catch (err) {
       console.error("Error removing reviewer:", err);
       setError(err.message || "Failed to remove reviewer");
+      showError(getErrorMessage(err, "Failed to remove reviewer"));
+    } finally {
+      setRemoveModal({ open: false, reviewerId: null });
     }
   };
 
@@ -117,11 +139,9 @@ const ReviewerAssignment = ({ positionId }) => {
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
               >
                 <div>
-                  <p className="font-medium">
-                    {reviewer.reviewer?.firstName} {reviewer.reviewer?.lastName}
-                  </p>
+                  <p className="font-medium">{reviewer.reviewerName}</p>
                   <p className="text-sm text-gray-600">
-                    {reviewer.reviewer?.email}
+                    {reviewer.reviewerEmail}
                   </p>
                   <p className="text-xs text-gray-500">
                     Assigned on{" "}
@@ -129,9 +149,7 @@ const ReviewerAssignment = ({ positionId }) => {
                   </p>
                 </div>
                 <button
-                  onClick={() =>
-                    handleRemoveReviewer(reviewer.reviewer?.userId)
-                  }
+                  onClick={() => handleRemoveReviewer(reviewer.reviewerId)}
                   className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                 >
                   Remove
@@ -155,12 +173,12 @@ const ReviewerAssignment = ({ positionId }) => {
             <option value="">Select a reviewer...</option>
             {availableReviewers
               .filter(
-                (emp) =>
-                  !reviewers.some((r) => r.reviewer?.userId === emp.userId)
+                (user) =>
+                  !reviewers.some((r) => r.reviewer?.userId === user.userId)
               )
-              .map((emp) => (
-                <option key={emp.userId} value={emp.userId}>
-                  {emp.firstName} {emp.lastName} - {emp.role?.roleName}
+              .map((user) => (
+                <option key={user.userId} value={user.userId}>
+                  {user.firstName} {user.lastName} - {user.role?.roleName}
                 </option>
               ))}
           </select>
@@ -179,6 +197,16 @@ const ReviewerAssignment = ({ positionId }) => {
           applying to this position.
         </p>
       </form>
+
+      <ConfirmationModal
+        isOpen={removeModal.open}
+        title="Remove Reviewer"
+        message="Are you sure you want to remove this reviewer?"
+        confirmText="Remove"
+        cancelText="Cancel"
+        onCancel={() => setRemoveModal({ open: false, reviewerId: null })}
+        onConfirm={confirmRemoveReviewer}
+      />
     </div>
   );
 };

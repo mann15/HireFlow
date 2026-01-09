@@ -147,8 +147,8 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
             ...positions.map((p) => ({
               value: p.positionId || p.id,
               label: `${p.jobTitle} (#${p.positionId || p.id})`,
-              subtitle: `${p.department} • ${p.status || 'OPEN'}`
-            }))
+              subtitle: `${p.department} • ${p.status || "OPEN"}`,
+            })),
           ]}
           placeholder="Select a position"
           loading={loading && positions.length === 0}

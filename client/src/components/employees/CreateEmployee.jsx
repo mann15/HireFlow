@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createEmployee } from "../../services/employeeService";
+import { getPositions } from "../../services/positionService";
+import SearchableDropdown from "../SearchableDropdown";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const CreateEmployee = ({
   candidateId,
@@ -19,6 +26,24 @@ const CreateEmployee = ({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [positions, setPositions] = useState([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
+  const fetchPositions = async () => {
+    try {
+      setLoadingPositions(true);
+      const data = await getPositions();
+      setPositions(data || []);
+    } catch (err) {
+      console.error("Failed to load positions", err);
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
 
   const departments = [
     "Engineering",
@@ -47,14 +72,16 @@ const CreateEmployee = ({
       };
 
       const response = await createEmployee(payload);
-      alert(
+      showSuccess(
         `Employee created successfully! Employee Code: ${
           response.employeeCode || "Generated"
         }`
       );
       if (onComplete) onComplete();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create employee record");
+      const message = getErrorMessage(err, "Failed to create employee record");
+      setError(message);
+      showError(message);
     } finally {
       setLoading(false);
     }
@@ -79,21 +106,22 @@ const CreateEmployee = ({
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Position ID *
-              </label>
-              <input
-                type="number"
-                value={formData.positionId}
-                onChange={(e) =>
-                  setFormData({ ...formData, positionId: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                placeholder="Position ID"
-                required
-              />
-            </div>
+            <SearchableDropdown
+              label="Position"
+              value={formData.positionId}
+              onChange={(value) =>
+                setFormData({ ...formData, positionId: value })
+              }
+              options={positions.map((pos) => ({
+                value: pos.positionId || pos.id,
+                label: `${pos.jobTitle} (#${pos.positionId || pos.id})`,
+                subtitle: `${pos.department} • ${pos.status || "OPEN"}`,
+              }))}
+              placeholder="Select a position"
+              loading={loadingPositions}
+              required
+              noOptionsText="No positions found"
+            />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -1,11 +1,16 @@
 package com.recruitment.server.controller;
 
 import com.recruitment.server.model.*;
+import com.recruitment.server.repository.CandidateRepository;
+import com.recruitment.server.repository.JobApplicationRepository;
+import com.recruitment.server.repository.JobRepository;
+import com.recruitment.server.repository.UserRepository;
 import com.recruitment.server.service.CandidateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/candidates")
@@ -23,6 +29,10 @@ import java.util.Optional;
 public class CandidateController {
 
     private final CandidateService candidateService;
+    private final CandidateRepository candidateRepository;
+    private final JobApplicationRepository jobApplicationRepository;
+    private final JobRepository jobRepository;
+    private final UserRepository userRepository;
 
     // Create candidate profile manually
     @PostMapping
@@ -275,6 +285,217 @@ public class CandidateController {
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Failed to get matching candidates: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    // Candidate self-service endpoints
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getMyProfile(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("candidate", candidate);
+            response.put("user", Map.of(
+                    "userId", user.getUserId(),
+                    "email", user.getEmail(),
+                    "firstName", user.getFirstName(),
+                    "lastName", user.getLastName(),
+                    "requiresPasswordChange", user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange()
+            ));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get profile: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/me/applications")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getMyApplications(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            List<JobApplication> applications = jobApplicationRepository.findByCandidate(candidate);
+
+            // Map applications to include position details
+            List<Map<String, Object>> applicationData = applications.stream()
+                    .map(app -> {
+                        Map<String, Object> appMap = new HashMap<>();
+                        appMap.put("applicationId", app.getApplicationId());
+                        appMap.put("status", app.getStatus());
+                        appMap.put("currentStage", app.getCurrentStage());
+                        appMap.put("appliedAt", app.getAppliedAt());
+                        appMap.put("statusUpdatedAt", app.getStatusUpdatedAt());
+                        appMap.put("overallScore", app.getOverallScore());
+                        appMap.put("holdReason", app.getHoldReason());
+                        appMap.put("rejectionReason", app.getRejectionReason());
+                        appMap.put("notes", app.getNotes());
+
+                        // Include position summary
+                        JobPosition position = app.getPosition();
+                        if (position != null) {
+                            Map<String, Object> positionMap = new HashMap<>();
+                            positionMap.put("positionId", position.getPositionId());
+                            positionMap.put("jobTitle", position.getJobTitle());
+                            positionMap.put("department", position.getDepartment());
+                            positionMap.put("status", position.getStatus());
+                            appMap.put("position", positionMap);
+                        }
+
+                        return appMap;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(applicationData);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get applications: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/me/applications/{applicationId}")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getMyApplicationById(@PathVariable Long applicationId, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            JobApplication application = jobApplicationRepository.findById(applicationId)
+                    .orElseThrow(() -> new RuntimeException("Application not found"));
+
+            // Verify that the application belongs to this candidate
+            if (!application.getCandidate().getCandidateId().equals(candidate.getCandidateId())) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "You are not authorized to view this application");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+
+            // Map application with full details
+            Map<String, Object> appMap = new HashMap<>();
+            appMap.put("applicationId", application.getApplicationId());
+            appMap.put("id", application.getApplicationId());
+            appMap.put("status", application.getStatus());
+            appMap.put("currentStage", application.getCurrentStage());
+            appMap.put("appliedAt", application.getAppliedAt());
+            appMap.put("statusUpdatedAt", application.getStatusUpdatedAt());
+            appMap.put("overallScore", application.getOverallScore());
+            appMap.put("holdReason", application.getHoldReason());
+            appMap.put("rejectionReason", application.getRejectionReason());
+            appMap.put("notes", application.getNotes());
+
+            // Include full candidate details
+            Candidate appCandidate = application.getCandidate();
+            if (appCandidate != null) {
+                Map<String, Object> candidateMap = new HashMap<>();
+                candidateMap.put("candidateId", appCandidate.getCandidateId());
+                candidateMap.put("id", appCandidate.getCandidateId());
+                candidateMap.put("firstName", appCandidate.getFirstName());
+                candidateMap.put("lastName", appCandidate.getLastName());
+                candidateMap.put("email", appCandidate.getEmail());
+                candidateMap.put("phone", appCandidate.getPhone());
+                candidateMap.put("currentLocation", appCandidate.getCurrentLocation());
+                candidateMap.put("totalExperience", appCandidate.getTotalExperience());
+                appMap.put("candidate", candidateMap);
+                appMap.put("candidateId", appCandidate.getCandidateId());
+                appMap.put("candidateName", appCandidate.getFirstName() + " " + appCandidate.getLastName());
+            }
+
+            // Include full position details
+            JobPosition position = application.getPosition();
+            if (position != null) {
+                Map<String, Object> positionMap = new HashMap<>();
+                positionMap.put("positionId", position.getPositionId());
+                positionMap.put("id", position.getPositionId());
+                positionMap.put("jobTitle", position.getJobTitle());
+                positionMap.put("jobDescription", position.getJobDescription());
+                positionMap.put("department", position.getDepartment());
+                positionMap.put("employmentType", position.getEmploymentType());
+                positionMap.put("experienceRequiredMin", position.getExperienceRequiredMin());
+                positionMap.put("experienceRequiredMax", position.getExperienceRequiredMax());
+                positionMap.put("salaryMin", position.getSalaryMin());
+                positionMap.put("salaryMax", position.getSalaryMax());
+                positionMap.put("status", position.getStatus());
+                appMap.put("position", positionMap);
+                appMap.put("positionId", position.getPositionId());
+                appMap.put("positionTitle", position.getJobTitle());
+            }
+
+            // Include CV details if available
+            if (application.getCv() != null) {
+                CandidateCV cv = application.getCv();
+                Map<String, Object> cvMap = new HashMap<>();
+                cvMap.put("cvId", cv.getCvId());
+                cvMap.put("fileName", cv.getFileName());
+                cvMap.put("uploadedAt", cv.getUploadedAt());
+                appMap.put("cv", cvMap);
+            }
+
+            return ResponseEntity.ok(appMap);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get application: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/me/available-positions")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getAvailablePositions(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            // Get all open positions
+            List<JobPosition> openPositions = jobRepository.findAll().stream()
+                    .filter(pos -> pos.getStatus() != null && 
+                            (pos.getStatus().name().equals("OPEN") || 
+                             pos.getStatus().name().equals("HOLD")))
+                    .collect(Collectors.toList());
+
+            // Get positions where candidate has already applied
+            List<JobApplication> existingApplications = jobApplicationRepository.findByCandidate(candidate);
+            List<Long> appliedPositionIds = existingApplications.stream()
+                    .map(app -> app.getPosition().getPositionId())
+                    .collect(Collectors.toList());
+
+            // Filter out positions where candidate has already applied
+            List<Map<String, Object>> availablePositions = openPositions.stream()
+                    .filter(pos -> !appliedPositionIds.contains(pos.getPositionId()))
+                    .map(pos -> {
+                        Map<String, Object> posMap = new HashMap<>();
+                        posMap.put("positionId", pos.getPositionId());
+                        posMap.put("jobTitle", pos.getJobTitle());
+                        posMap.put("department", pos.getDepartment());
+                        posMap.put("jobDescription", pos.getJobDescription());
+                        posMap.put("status", pos.getStatus());
+                        posMap.put("createdAt", pos.getCreatedAt());
+                        return posMap;
+                    })
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("positions", availablePositions);
+            response.put("count", availablePositions.size());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get available positions: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }

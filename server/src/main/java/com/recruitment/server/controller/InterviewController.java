@@ -200,6 +200,7 @@ public class InterviewController {
 
     // Legacy endpoint for compatibility
     @PostMapping("/simulate-online")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> simulateOnlineInterview(@RequestParam Long candidateId) {
         Random random = new Random();
         int marks = random.nextInt(101);

@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import { candidateService } from "../../services/candidateService";
-import { getApplicationById } from "../../services/applicationService";
+import {
+  getApplicationById,
+  moveToInterview,
+} from "../../services/applicationService";
+import {
+  checkCandidateHistory,
+  submitScreeningFeedback,
+  verifyCandidateSkill,
+} from "../../services/reviewService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+  showWarning,
+} from "../../utils/toastUtils";
 
 const CVReviewPanel = ({ applicationId, onUpdate }) => {
+  const { currentUser } = useSelector((state) => state.user);
   const [application, setApplication] = useState(null);
   const [candidate, setCandidate] = useState(null);
   const [skills, setSkills] = useState([]);
@@ -15,7 +31,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
 
   useEffect(() => {
     loadApplicationAndCandidate();
-    checkCandidateHistory();
+    checkCandidateHistoryData();
   }, [applicationId]);
 
   const loadApplicationAndCandidate = async () => {
@@ -25,9 +41,10 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
       setApplication(appData);
 
       const candidateData = await candidateService.getCandidateById(
-        appData.candidateId
+        appData.candidate.candidateId
       );
       setCandidate(candidateData);
+      console.log(candidateData);
 
       // Load candidate skills with verification status
       if (candidateData.skills) {
@@ -45,21 +62,18 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
     }
   };
 
-  const checkCandidateHistory = async () => {
+  const checkCandidateHistoryData = async () => {
     try {
       // Check if candidate was previously screened or interviewed
-      const response = await fetch(
-        `/api/candidates/${applicationId}/history-check`
-      );
-      const data = await response.json();
+      const history = await checkCandidateHistory(applicationId);
 
-      if (data.hasPreviousScreening || data.hasPreviousInterview) {
+      if (history.hasPreviousScreening || history.hasPreviousInterview) {
         setNotification({
           type: "warning",
           message:
-            data.message ||
+            history.message ||
             "This candidate has been screened/interviewed previously",
-          details: data.details,
+          details: history.details || [],
         });
       }
     } catch (error) {
@@ -81,7 +95,14 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
 
   const handleSubmitReview = async () => {
     if (!comments.trim()) {
-      alert("Please add review comments");
+      showWarning("Please add review comments");
+      return;
+    }
+
+    const reviewerId =
+      currentUser?.id || currentUser?.userId || currentUser?.user?.id;
+    if (!reviewerId) {
+      showError("Unable to determine reviewer. Please re-login and try again.");
       return;
     }
 
@@ -90,38 +111,48 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
 
       // Update skills verification
       for (const skill of skills) {
-        if (skill.verified) {
-          await fetch(
-            `/api/candidates/${candidate.candidateId}/skills/${skill.id}/verify`,
-            {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                verified: skill.verified,
-                yearsOfExperience: skill.yearsOfExperience,
-              }),
-            }
-          );
+        if (skill.verified && skill.id) {
+          try {
+            await verifyCandidateSkill(candidate.candidateId, skill.id, {
+              verified: skill.verified,
+              yearsOfExperience: skill.yearsOfExperience,
+            });
+          } catch (skillErr) {
+            console.error("Error verifying skill:", skillErr);
+          }
         }
       }
 
       // Submit screening feedback
-      await fetch(`/api/screening-feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          applicationId: applicationId,
-          comments: comments,
-          score: score,
-          recommendation: recommendation,
-        }),
+      await submitScreeningFeedback({
+        applicationId: applicationId,
+        reviewerId: reviewerId,
+        comments: comments,
+        score: score,
+        recommendation: recommendation,
       });
 
-      alert("Review submitted successfully");
+      // If recommendation is SHORTLIST, automatically move to interview stage
+      if (recommendation === "SHORTLIST") {
+        try {
+          await moveToInterview(applicationId);
+          showSuccess(
+            "Review submitted and candidate moved to interview stage!"
+          );
+        } catch (moveErr) {
+          console.error("Error moving to interview:", moveErr);
+          showError(
+            "Review submitted, but failed to move to interview stage. Please move manually."
+          );
+        }
+      } else {
+        showSuccess("Review submitted successfully");
+      }
+
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error submitting review:", error);
-      alert("Failed to submit review");
+      showError(getErrorMessage(error, "Failed to submit review"));
     } finally {
       setSaving(false);
     }
@@ -188,11 +219,11 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
           </div>
           <div>
             <p className="text-sm text-gray-600">Phone</p>
-            <p className="font-medium">{candidate?.phoneNumber}</p>
+            <p className="font-medium">{candidate?.phone}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Position</p>
-            <p className="font-medium">{application?.positionTitle}</p>
+            <p className="font-medium">{application?.position?.jobTitle}</p>
           </div>
         </div>
       </div>

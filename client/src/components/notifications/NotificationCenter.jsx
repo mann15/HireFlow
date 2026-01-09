@@ -1,57 +1,38 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  getUnreadNotifications,
-  getMyNotifications,
-  markAsRead,
-  markAllAsRead,
-  getUnreadCount,
-} from "../../services/notificationService";
+  fetchNotifications,
+  fetchUnreadCount,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "../../redux/thunks/notificationThunks";
 import { format } from "date-fns";
+import { showError, showSuccess } from "../../utils/toastUtils";
 
 const NotificationCenter = () => {
-  const [notifications, setNotifications] = useState([]);
+  const dispatch = useDispatch();
+  const { notifications, unreadCount, loading } = useSelector((state) => state.notification);
   const [showAll, setShowAll] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
+    dispatch(fetchNotifications(showAll));
+    dispatch(fetchUnreadCount());
     // Refresh notifications every 30 seconds
     const interval = setInterval(() => {
-      fetchUnreadCount();
+      dispatch(fetchUnreadCount());
     }, 30000);
     return () => clearInterval(interval);
-  }, [showAll]);
+  }, [dispatch, showAll]);
 
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const data = showAll
-        ? await getMyNotifications()
-        : await getUnreadNotifications();
-      setNotifications(data);
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUnreadCount = async () => {
-    try {
-      const count = await getUnreadCount();
-      setUnreadCount(count);
-    } catch (err) {
-      console.error("Failed to fetch unread count:", err);
-    }
-  };
+  useEffect(() => {
+    dispatch(fetchNotifications(showAll));
+  }, [dispatch, showAll]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
-      await markAsRead(notificationId);
-      await fetchNotifications();
-      await fetchUnreadCount();
+      await dispatch(markNotificationAsRead(notificationId));
+      dispatch(fetchNotifications(showAll));
+      dispatch(fetchUnreadCount());
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
@@ -59,12 +40,12 @@ const NotificationCenter = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllAsRead();
-      await fetchNotifications();
-      await fetchUnreadCount();
-      alert("All notifications marked as read");
+      await dispatch(markAllNotificationsAsRead());
+      dispatch(fetchNotifications(showAll));
+      dispatch(fetchUnreadCount());
+      showSuccess("All notifications marked as read");
     } catch (err) {
-      alert("Failed to mark all as read");
+      showError("Failed to mark all as read");
     }
   };
 
@@ -91,7 +72,7 @@ const NotificationCenter = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 max-w-2xl mx-auto">
+    <div className="relative z-[9999] bg-white rounded-lg shadow p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">
           Notifications

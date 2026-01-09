@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { getDocumentsByApplication } from "../../services/documentService";
 import { verifyDocument } from "../../services/documentService";
 import { format } from "date-fns";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
   const [documents, setDocuments] = useState([]);
@@ -41,13 +46,13 @@ const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
         verifyData.status,
         verifyData.remarks
       );
-      alert("Document status updated successfully!");
+      showSuccess("Document status updated successfully!");
       setVerifyModal({ show: false, document: null });
       setVerifyData({ status: "VERIFIED", remarks: "" });
       await fetchDocuments();
       if (onUpdate) onUpdate();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to update document status");
+      showError(getErrorMessage(err, "Failed to update document status"));
     } finally {
       setActionLoading(false);
     }

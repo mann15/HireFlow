@@ -3,6 +3,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { candidateService } from "../../services/candidateService";
 import Loader from "../../components/Loader";
 import CVUpload from "../../components/candidates/CVUpload";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
+import {
+  showError,
+  showSuccess,
+  getErrorMessage,
+} from "../../utils/toastUtils";
 
 const CandidateDetails = () => {
   const { candidateId } = useParams();
@@ -14,6 +20,7 @@ const CandidateDetails = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [showCVUpload, setShowCVUpload] = useState(false);
+  const [deactivateModal, setDeactivateModal] = useState(false);
 
   useEffect(() => {
     fetchCandidateDetails();
@@ -39,13 +46,17 @@ const CandidateDetails = () => {
   };
 
   const handleDeactivate = async () => {
-    if (window.confirm("Are you sure you want to deactivate this candidate?")) {
-      try {
-        await candidateService.deactivateCandidate(candidateId);
-        navigate("/candidates");
-      } catch (err) {
-        setError(err.error || "Failed to deactivate candidate");
-      }
+    try {
+      await candidateService.deactivateCandidate(candidateId);
+      showSuccess("Candidate deactivated");
+      navigate("/candidates");
+    } catch (err) {
+      const message =
+        err.error || getErrorMessage(err, "Failed to deactivate candidate");
+      setError(message);
+      showError(message);
+    } finally {
+      setDeactivateModal(false);
     }
   };
 
@@ -108,7 +119,7 @@ const CandidateDetails = () => {
                 Edit Profile
               </Link>
               <button
-                onClick={handleDeactivate}
+                onClick={() => setDeactivateModal(true)}
                 className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition duration-200 font-medium"
               >
                 Deactivate
@@ -470,6 +481,16 @@ const CandidateDetails = () => {
           )}
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={deactivateModal}
+        title="Deactivate Candidate"
+        message="Are you sure you want to deactivate this candidate?"
+        confirmText="Deactivate"
+        cancelText="Cancel"
+        onCancel={() => setDeactivateModal(false)}
+        onConfirm={handleDeactivate}
+      />
     </div>
   );
 };

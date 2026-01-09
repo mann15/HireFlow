@@ -20,9 +20,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.recruitment.server.service.CustomUserDetailsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import com.recruitment.server.service.EmailService;
+import com.recruitment.server.model.Candidate;
+import com.recruitment.server.model.PasswordResetToken;
+import com.recruitment.server.repository.CandidateRepository;
+import com.recruitment.server.repository.PasswordResetTokenRepository;
+
 import java.util.Map;
+import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,19 +41,28 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final EmailService emailService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final CandidateRepository candidateRepository;
 
     public AuthController(AuthenticationManager authenticationManager,
             UserRepository userRepo,
             RoleRepository roleRepo,
             PasswordEncoder passwordEncoder,
             JwtUtil jwtUtil,
-            CustomUserDetailsService userDetailsService) {
+            CustomUserDetailsService userDetailsService,
+            EmailService emailService,
+            PasswordResetTokenRepository passwordResetTokenRepository,
+            CandidateRepository candidateRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.emailService = emailService;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.candidateRepository = candidateRepository;
     }
 
     @PostMapping("/register")
@@ -143,7 +159,7 @@ public class AuthController {
         cookie.setSecure(request.isSecure());
         cookie.setPath("/");
         cookie.setMaxAge(0);
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", "Lax");
         response.addCookie(cookie);
 
         return ResponseEntity.ok("Logged out successfully");
@@ -204,10 +220,9 @@ public class AuthController {
     private Cookie createJwtCookie(String token, long expiresAt, boolean secure) {
         Cookie cookie = new Cookie("token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(secure);
+        cookie.setSecure(false); // Changed from secure parameter
         cookie.setPath("/");
         cookie.setMaxAge((int) ((expiresAt - System.currentTimeMillis()) / 1000));
-        cookie.setAttribute("SameSite", "Strict");
         return cookie;
     }
 }

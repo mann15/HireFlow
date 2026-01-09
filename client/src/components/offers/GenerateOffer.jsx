@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { generateOffer } from "../../services/offerService";
+import { useParams } from "react-router-dom";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
-const GenerateOffer = ({
-  applicationId,
-  candidateName,
-  positionTitle,
-  onComplete,
-}) => {
+const GenerateOffer = ({ candidateName, positionTitle, onComplete }) => {
   const [formData, setFormData] = useState({
-    applicationId: applicationId,
     salaryOffered: "",
     offeredDesignation: "",
     joiningDate: "",
@@ -18,8 +18,18 @@ const GenerateOffer = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const { applicationId } = useParams();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate applicationId
+    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+      setError("Invalid application ID");
+      showError("Invalid application ID");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -27,13 +37,16 @@ const GenerateOffer = ({
       const payload = {
         ...formData,
         salaryOffered: parseFloat(formData.salaryOffered),
+        applicationId: parseInt(applicationId),
       };
 
       await generateOffer(payload);
-      alert("Offer generated successfully!");
+      showSuccess("Offer generated successfully!");
       if (onComplete) onComplete();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to generate offer");
+      const message = getErrorMessage(err, "Failed to generate offer");
+      setError(message);
+      showError(message);
     } finally {
       setLoading(false);
     }

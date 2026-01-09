@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { getPendingDocuments } from "../../services/documentService";
 import { verifyDocument } from "../../services/documentService";
 import { format } from "date-fns";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const PendingDocumentsQueue = () => {
   const [documents, setDocuments] = useState([]);
@@ -34,12 +39,12 @@ const PendingDocumentsQueue = () => {
     setActionLoading(true);
     try {
       await verifyDocument(documentId, verifyData.status, verifyData.remarks);
-      alert("Document verified successfully!");
+      showSuccess("Document verified successfully!");
       setSelectedDoc(null);
       setVerifyData({ status: "VERIFIED", remarks: "" });
       await fetchPendingDocuments();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to verify document");
+      showError(getErrorMessage(err, "Failed to verify document"));
     } finally {
       setActionLoading(false);
     }

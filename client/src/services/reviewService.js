@@ -3,6 +3,8 @@ import api from "../api/axios";
 const BASE = "/positions";
 const REVIEWER_BASE = "/position-reviewers";
 
+const SCREENING_BASE = "/screening";
+
 // Assign reviewer to position
 export const assignReviewer = async (positionId, reviewerId) => {
   const response = await api.post(REVIEWER_BASE, {
@@ -23,15 +25,12 @@ export const removeReviewer = async (positionId, reviewerId) => {
   const response = await api.delete(
     `${REVIEWER_BASE}/${positionId}/${reviewerId}`
   );
-  return response.data;
+  return response.status >= 200 && response.status < 300;
 };
 
 // Add comment to application
-export const addComment = async (positionId, commentData) => {
-  const response = await api.post(
-    `${BASE}/${positionId}/comments`,
-    commentData
-  );
+export const addScreeningComment = async (commentData) => {
+  const response = await api.post(`${SCREENING_BASE}/comments`, commentData);
   return response.data;
 };
 
@@ -51,28 +50,38 @@ export const getNotifications = async (positionId) => {
 
 // Submit screening feedback
 export const submitScreeningFeedback = async (feedbackData) => {
-  const response = await api.post("/api/screening-feedback", feedbackData);
+  const response = await api.post(`${SCREENING_BASE}/feedback`, feedbackData);
   return response.data;
 };
 
 // Get screening feedback for application
 export const getScreeningFeedback = async (applicationId) => {
   const response = await api.get(
-    `/api/applications/${applicationId}/screening-feedback`
+    `${SCREENING_BASE}/feedback/application/${applicationId}`
   );
   return response.data;
 };
 
-// Check candidate history (previous screening/interview)
-export const checkCandidateHistory = async (
-  candidateId,
-  currentApplicationId
-) => {
+// Screening comments for application
+export const getScreeningComments = async (applicationId) => {
   const response = await api.get(
-    `/api/candidates/${candidateId}/history-check`,
-    {
-      params: { currentApplicationId },
-    }
+    `${SCREENING_BASE}/comments/application/${applicationId}`
+  );
+  return response.data;
+};
+
+// Screening notifications for application (previous screenings/interviews)
+export const getScreeningNotifications = async (applicationId) => {
+  const response = await api.get(
+    `${SCREENING_BASE}/notifications/application/${applicationId}`
+  );
+  return response.data;
+};
+
+// Trigger history check (previous screening/interview) for an application
+export const checkCandidateHistory = async (applicationId) => {
+  const response = await api.post(
+    `${SCREENING_BASE}/application/${applicationId}/check-history`
   );
   return response.data;
 };
@@ -84,7 +93,7 @@ export const verifyCandidateSkill = async (
   verificationData
 ) => {
   const response = await api.put(
-    `/api/candidates/${candidateId}/skills/${skillId}/verify`,
+    `/candidates/${candidateId}/skills/${skillId}/verify`,
     verificationData
   );
   return response.data;

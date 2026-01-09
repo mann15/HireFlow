@@ -63,7 +63,7 @@ public class DocumentController {
     }
 
     @GetMapping("/application/{applicationId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','CANDIDATE','VIEWER')")
     public ResponseEntity<?> getDocumentsByApplication(@PathVariable Long applicationId) {
         try {
             List<CandidateDocuments> documents = documentService.getDocumentsByApplication(applicationId);
@@ -85,7 +85,7 @@ public class DocumentController {
     }
 
     @GetMapping("/types")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','CANDIDATE','VIEWER')")
     public ResponseEntity<?> getAllDocumentTypes() {
         try {
             List<DocumentTypes> types = documentService.getAllDocumentTypes();

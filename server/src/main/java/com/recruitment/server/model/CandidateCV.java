@@ -2,6 +2,8 @@ package com.recruitment.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "candidate_cvs")
@@ -9,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class CandidateCV {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,10 +19,12 @@ public class CandidateCV {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id", nullable = false)
+    @JsonIgnoreProperties("cvs")
     private Candidate candidate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id", nullable = true)
+    @JsonIgnoreProperties("applications")
     private JobPosition positionId;
 
     /**
@@ -27,6 +32,9 @@ public class CandidateCV {
      */
     @Column(nullable = false)
     private String cvFilePath;
+
+    /** Original file name */
+    private String fileName;
 
     /** Cloudinary public id (if uploaded to Cloudinary) */
     private String cloudPublicId;
@@ -37,5 +45,8 @@ public class CandidateCV {
     /** Extracted structured/profile data (JSON string) */
     @Column(columnDefinition = "TEXT")
     private String extractedData;
+
+    /** Upload timestamp */
+    private LocalDateTime uploadedAt;
 
 }

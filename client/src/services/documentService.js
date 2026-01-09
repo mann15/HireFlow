@@ -12,8 +12,18 @@ export const uploadDocument = async (formData) => {
   return response.data;
 };
 
+// Fetch available document types from backend
+export const getDocumentTypes = async () => {
+  const response = await api.get(`${BASE}/types`);
+  return response.data;
+};
+
 // Get documents by application
 export const getDocumentsByApplication = async (applicationId) => {
+  // Validate applicationId
+  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    throw new Error("Invalid application ID");
+  }
   const response = await api.get(`${BASE}/application/${applicationId}`);
   return response.data;
 };

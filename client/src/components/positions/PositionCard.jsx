@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const PositionCard = ({ position }) => {
   const formatSalary = (min, max) => {
@@ -44,6 +45,9 @@ const PositionCard = ({ position }) => {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const { currentUser } = useSelector((state) => state.user);
+  const isCandidate = currentUser?.role?.toUpperCase() === "CANDIDATE";
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
@@ -105,15 +109,29 @@ const PositionCard = ({ position }) => {
               : "1 position"}
           </div>
           <div className="flex space-x-2">
-            <Link
-              to={`/positions/${position.positionId}/edit`}
-              className="px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors duration-150"
-            >
-              Edit
-            </Link>
+            {!isCandidate && (
+              <Link
+                to={`/positions/${position.positionId}/edit`}
+                className="px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150"
+                style={{ color: 'var(--primary-color)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--primary-700)';
+                  e.currentTarget.style.backgroundColor = 'var(--primary-50)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--primary-color)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                Edit
+              </Link>
+            )}
             <Link
               to={`/positions/${position.positionId}`}
-              className="px-3 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition-colors duration-150"
+              className="px-3 py-1 text-xs font-medium text-white rounded-md transition-colors duration-150"
+              style={{ backgroundColor: 'var(--primary-color)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-color)'}
             >
               View Details
             </Link>

@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { candidateService } from "../../services/candidateService";
 import { getApplicationById } from "../../services/applicationService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+  showWarning,
+} from "../../utils/toastUtils";
 
 const InterviewSkillAssessment = ({ interviewId, applicationId, onSubmit }) => {
   const [candidate, setCandidate] = useState(null);
@@ -68,7 +74,7 @@ const InterviewSkillAssessment = ({ interviewId, applicationId, onSubmit }) => {
 
   const handleSubmitFeedback = async () => {
     if (!feedback.trim()) {
-      alert("Please provide overall feedback");
+      showWarning("Please provide overall feedback");
       return;
     }
 
@@ -113,11 +119,11 @@ const InterviewSkillAssessment = ({ interviewId, applicationId, onSubmit }) => {
         body: JSON.stringify(feedbackData),
       });
 
-      alert("Feedback submitted successfully");
+      showSuccess("Feedback submitted successfully");
       if (onSubmit) onSubmit();
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback");
+      showError(getErrorMessage(error, "Failed to submit feedback"));
     } finally {
       setSaving(false);
     }

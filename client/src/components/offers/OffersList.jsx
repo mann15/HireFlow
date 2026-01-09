@@ -7,6 +7,13 @@ import {
   withdrawOffer,
 } from "../../services/offerService";
 import { format } from "date-fns";
+import ConfirmationModal from "../common/ConfirmationModal";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+  showWarning,
+} from "../../utils/toastUtils";
 
 const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
   const [offers, setOffers] = useState([]);
@@ -17,6 +24,13 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
     offerId: null,
   });
   const [rejectReason, setRejectReason] = useState("");
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    action: null,
+    offerId: null,
+    title: "Confirm",
+    message: "Are you sure?",
+  });
 
   useEffect(() => {
     fetchOffers();
@@ -36,38 +50,26 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
   };
 
   const handleSendOffer = async (offerId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to send this offer to the candidate?"
-      )
-    ) {
-      return;
-    }
-
     setActionLoading(true);
     try {
       await sendOffer(offerId);
-      alert("Offer sent to candidate successfully!");
+      showSuccess("Offer sent to candidate successfully!");
       await fetchOffers();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to send offer");
+      showError(getErrorMessage(err, "Failed to send offer"));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleAcceptOffer = async (offerId) => {
-    if (!window.confirm("Are you sure you want to accept this offer?")) {
-      return;
-    }
-
     setActionLoading(true);
     try {
       await acceptOffer(offerId);
-      alert("Offer accepted successfully!");
+      showSuccess("Offer accepted successfully!");
       await fetchOffers();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to accept offer");
+      showError(getErrorMessage(err, "Failed to accept offer"));
     } finally {
       setActionLoading(false);
     }
@@ -75,38 +77,68 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
 
   const handleRejectOffer = async () => {
     if (!rejectReason.trim()) {
-      alert("Please provide a reason for rejection");
+      showWarning("Please provide a reason for rejection");
       return;
     }
 
     setActionLoading(true);
     try {
       await rejectOffer(rejectModal.offerId, rejectReason);
-      alert("Offer rejected");
+      showSuccess("Offer rejected");
       setRejectModal({ show: false, offerId: null });
       setRejectReason("");
       await fetchOffers();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to reject offer");
+      showError(getErrorMessage(err, "Failed to reject offer"));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleWithdrawOffer = async (offerId) => {
-    if (!window.confirm("Are you sure you want to withdraw this offer?")) {
-      return;
-    }
-
     setActionLoading(true);
     try {
       await withdrawOffer(offerId);
-      alert("Offer withdrawn successfully!");
+      showSuccess("Offer withdrawn successfully!");
       await fetchOffers();
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to withdraw offer");
+      showError(getErrorMessage(err, "Failed to withdraw offer"));
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const openConfirm = (action, offerId, title, message) => {
+    setConfirmModal({
+      open: true,
+      action,
+      offerId,
+      title,
+      message,
+    });
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmModal.action || !confirmModal.offerId) {
+      setConfirmModal({ ...confirmModal, open: false });
+      return;
+    }
+
+    const { action, offerId } = confirmModal;
+    setConfirmModal({ ...confirmModal, open: false });
+
+    switch (action) {
+      case "send":
+        await handleSendOffer(offerId);
+        break;
+      case "accept":
+        await handleAcceptOffer(offerId);
+        break;
+      case "withdraw":
+        await handleWithdrawOffer(offerId);
+        break;
+      default:
+        break;
     }
   };
 
@@ -215,7 +247,14 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
                 <div className="flex gap-2 pt-4 border-t">
                   {offer.offerStatus === "GENERATED" && (
                     <button
-                      onClick={() => handleSendOffer(offer.id)}
+                      onClick={() =>
+                        openConfirm(
+                          "send",
+                          offer.id,
+                          "Send Offer",
+                          "Send this offer to the candidate?"
+                        )
+                      }
                       disabled={actionLoading}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                     >
@@ -224,7 +263,14 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
                   )}
                   {["GENERATED", "SEND"].includes(offer.offerStatus) && (
                     <button
-                      onClick={() => handleWithdrawOffer(offer.id)}
+                      onClick={() =>
+                        openConfirm(
+                          "withdraw",
+                          offer.id,
+                          "Withdraw Offer",
+                          "Are you sure you want to withdraw this offer?"
+                        )
+                      }
                       disabled={actionLoading}
                       className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400"
                     >
@@ -238,7 +284,14 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
               {isCandidate && offer.offerStatus === "SEND" && (
                 <div className="flex gap-2 pt-4 border-t">
                   <button
-                    onClick={() => handleAcceptOffer(offer.id)}
+                    onClick={() =>
+                      openConfirm(
+                        "accept",
+                        offer.id,
+                        "Accept Offer",
+                        "Do you want to accept this offer?"
+                      )
+                    }
                     disabled={actionLoading}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
                   >
@@ -297,6 +350,17 @@ const OffersList = ({ applicationId, isHR = false, isCandidate = false }) => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Yes"
+        cancelText="No"
+        loading={actionLoading}
+        onCancel={() => setConfirmModal({ ...confirmModal, open: false })}
+        onConfirm={handleConfirmAction}
+      />
     </div>
   );
 };

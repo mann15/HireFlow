@@ -33,6 +33,7 @@ public class Candidate {
     private String alternatePhone;
     private String currentLocation;
     private String preferredLocation;
+    private String collegeName;
 
     @Builder.Default
     private BigDecimal totalExperience = BigDecimal.ZERO;

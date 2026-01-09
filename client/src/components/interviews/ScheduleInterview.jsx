@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { scheduleInterview } from "../../services/interviewService";
-import { getInterviewRounds } from "../../services/interviewService";
+import {
+  scheduleInterview,
+  getInterviewRounds,
+} from "../../services/interviewService";
 import { checkCandidateHistory } from "../../services/reviewService";
-import { getApplicationById } from "../../services/applicationService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const ScheduleInterview = ({
   applicationId,
@@ -61,20 +67,16 @@ const ScheduleInterview = ({
 
   const checkForPreviousHistory = async () => {
     try {
-      const app = await getApplicationById(applicationId);
-      if (app.candidateId) {
-        const history = await checkCandidateHistory(
-          app.candidateId,
-          applicationId
-        );
+      const history = await checkCandidateHistory(applicationId);
 
-        if (history.hasPreviousInterview) {
-          setNotification({
-            type: "warning",
-            message: "This candidate has been interviewed previously",
-            details: history.details || [],
-          });
-        }
+      if (history.hasPreviousInterview || history.hasPreviousScreening) {
+        setNotification({
+          type: "warning",
+          message:
+            history.message ||
+            "This candidate has been screened/interviewed previously",
+          details: history.details || [],
+        });
       }
     } catch (err) {
       console.error("Error checking candidate history:", err);
@@ -151,7 +153,7 @@ const ScheduleInterview = ({
       };
 
       await scheduleInterview(payload);
-      alert("Interview scheduled successfully!");
+      showSuccess("Interview scheduled successfully!");
       if (onlineAssessment.enabled) {
         setOnlineAssessmentStatus(
           onlineAssessmentPayload?.scheduledAt
@@ -161,7 +163,9 @@ const ScheduleInterview = ({
       }
       if (onComplete) onComplete();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to schedule interview");
+      const message = getErrorMessage(err, "Failed to schedule interview");
+      setError(message);
+      showError(message);
     } finally {
       setLoading(false);
     }

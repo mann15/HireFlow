@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
 import { getApplicationById } from "../../services/applicationService";
-import { getInterviewsByApplication } from "../../services/interviewService";
-import { getDocumentsByApplication } from "../../services/documentService";
-import { getOffersByApplication } from "../../services/offerService";
 import ApplicationStatusManager from "./ApplicationStatusManager";
 import InterviewsList from "../interviews/InterviewsList";
 import { format } from "date-fns";
@@ -13,10 +10,15 @@ const ApplicationDetails = ({ applicationId }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApplication();
+    if (applicationId && applicationId !== "undefined" && applicationId !== "null") {
+      fetchApplication();
+    }
   }, [applicationId]);
 
   const fetchApplication = async () => {
+    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+      return;
+    }
     setLoading(true);
     try {
       const data = await getApplicationById(applicationId);

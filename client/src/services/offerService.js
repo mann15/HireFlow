@@ -16,6 +16,10 @@ export const getOfferById = async (offerId) => {
 
 // Get offers by application
 export const getOffersByApplication = async (applicationId) => {
+  // Validate applicationId
+  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    throw new Error("Invalid application ID");
+  }
   const response = await api.get(`${BASE}/application/${applicationId}`);
   return response.data;
 };
@@ -49,5 +53,11 @@ export const rejectOffer = async (offerId, reason) => {
 // Withdraw offer
 export const withdrawOffer = async (offerId) => {
   const response = await api.put(`${BASE}/${offerId}/withdraw`);
+  return response.data;
+};
+
+// Get offers for the logged-in candidate
+export const getMyOffers = async () => {
+  const response = await api.get(`${BASE}/my`);
   return response.data;
 };

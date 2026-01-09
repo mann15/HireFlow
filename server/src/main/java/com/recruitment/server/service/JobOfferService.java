@@ -2,6 +2,7 @@ package com.recruitment.server.service;
 
 import com.recruitment.server.model.*;
 import com.recruitment.server.repository.*;
+import com.recruitment.server.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,8 +19,8 @@ public class JobOfferService {
 
     private final JobOffersRepository jobOffersRepository;
     private final JobApplicationRepository jobApplicationRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     public JobOffers generateOffer(Long applicationId, BigDecimal salaryOffered,
             String offeredDesignation, LocalDate joiningDate, 
@@ -57,6 +58,10 @@ public class JobOfferService {
         jobApplicationRepository.save(application);
 
         return savedOffer;
+    }
+
+    public List<JobOffers> getOffersForUser(User user) {
+        return jobOffersRepository.findByApplicationCandidateUser(user);
     }
 
     public JobOffers sendOffer(Long offerId) {
@@ -156,5 +161,9 @@ public class JobOfferService {
 
     public List<JobOffers> getOffersByStatus(JobOffers.OfferStatus status) {
         return jobOffersRepository.findByStatus(status);
+    }
+
+    public List<JobOffers> getAllOffers() {
+        return jobOffersRepository.findAll();
     }
 }

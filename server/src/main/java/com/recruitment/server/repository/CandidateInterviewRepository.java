@@ -15,8 +15,16 @@ public interface CandidateInterviewRepository extends JpaRepository<CandidateInt
 
     @Query("SELECT COUNT(ci) > 0 FROM CandidateInterview ci WHERE ci.application.candidate = :candidate")
     boolean existsByApplicationCandidate(@Param("candidate") Candidate candidate);
-    
+
     List<CandidateInterview> findByApplication(JobApplication application);
-    
+
     List<CandidateInterview> findByStatus(CandidateInterview.InterviewStatus status);
+
+    @Query("""
+            SELECT ci FROM CandidateInterview ci
+            WHERE (:start IS NULL OR ci.interviewDate >= :start)
+              AND (:end IS NULL OR ci.interviewDate <= :end)
+            """)
+    List<CandidateInterview> findWithinDateRange(@Param("start") java.time.LocalDateTime start,
+            @Param("end") java.time.LocalDateTime end);
 }

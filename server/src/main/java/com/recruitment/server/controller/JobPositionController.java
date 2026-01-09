@@ -3,6 +3,7 @@ package com.recruitment.server.controller;
 import com.recruitment.server.model.JobPosition;
 import com.recruitment.server.model.JobSkillsRequired;
 import com.recruitment.server.model.Skills;
+import com.recruitment.server.model.User;
 import com.recruitment.server.model.ProficiencyLevels;
 import com.recruitment.server.model.JobApplication;
 import com.recruitment.server.repository.JobRepository;
@@ -58,14 +59,64 @@ public class JobPositionController {
     }
 
     @GetMapping
-    public ResponseEntity<List<JobPosition>> getAllPositions() {
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<List<JobPosition>> getAllPositions(Authentication authentication) {
+        // If user is authenticated, apply role-based filtering
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String email = authentication.getName();
+                User currentUser = userRepository.findByEmail(email)
+                        .orElse(null);
+                
+                if (currentUser != null) {
+                    String roleName = currentUser.getRole().getRoleName();
+                    // Apply role-based filtering for REVIEWER and RECRUITER
+                    if (roleName.equals("REVIEWER") || roleName.equals("RECRUITER")) {
+                        return ResponseEntity.ok(jobPositionService.getPositionsByRole(currentUser));
+                    }
+                    // HR, ADMIN, SUPER_ADMIN, VIEWER can see all positions
+                }
+            } catch (Exception e) {
+                // If there's an error, fall back to showing all positions
+                // This ensures public access still works
+            }
+        }
+        // For unauthenticated users or if filtering fails, show all positions
         return ResponseEntity.ok(jobRepository.findAll());
     }
 
     @GetMapping("/{position_id}")
-    public ResponseEntity<?> getPositionById(@PathVariable("position_id") Long id) {
+    public ResponseEntity<?> getPositionById(@PathVariable("position_id") Long id,
+            Authentication authentication) {
         Optional<JobPosition> job = jobRepository.findById(id);
-        return job.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        if (job.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Check role-based access for authenticated users
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String email = authentication.getName();
+                User currentUser = userRepository.findByEmail(email)
+                        .orElse(null);
+                
+                if (currentUser != null) {
+                    String roleName = currentUser.getRole().getRoleName();
+                    // Check access for REVIEWER and RECRUITER
+                    if (roleName.equals("REVIEWER") || roleName.equals("RECRUITER")) {
+                        if (!jobPositionService.hasAccessToPosition(currentUser, job.get())) {
+                            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                                    .body(Map.of("error", "You do not have access to this position"));
+                        }
+                    }
+                    // HR, ADMIN, SUPER_ADMIN, VIEWER can access all positions
+                }
+            } catch (Exception e) {
+                // If there's an error, allow access (for public/unauthenticated access)
+            }
+        }
+        
+        return ResponseEntity.ok(job.get());
     }
 
     @PostMapping
@@ -145,11 +196,33 @@ public class JobPositionController {
 
     // Applications endpoint
     @GetMapping("/{position_id}/applications")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<JobApplication>> getPositionApplications(@PathVariable("position_id") Long positionId) {
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','REVIEWER','INTERVIEWER','VIEWER')")
+    public ResponseEntity<?> getPositionApplications(@PathVariable("position_id") Long positionId,
+            Authentication authentication) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
         if (position.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+
+        // Check role-based access
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String email = authentication.getName();
+                User currentUser = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+                
+                String roleName = currentUser.getRole().getRoleName();
+                // Check access for REVIEWER and RECRUITER
+                if (roleName.equals("REVIEWER") || roleName.equals("RECRUITER")) {
+                    if (!jobPositionService.hasAccessToPosition(currentUser, position.get())) {
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                                .body(Map.of("error", "You do not have access to this position's applications"));
+                    }
+                }
+                // HR, ADMIN, SUPER_ADMIN, VIEWER can access all
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            }
         }
 
         List<JobApplication> applications = jobApplicationRepository.findByPositionId(positionId);
@@ -275,32 +348,30 @@ public class JobPositionController {
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
     public ResponseEntity<?> closePosition(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, Object> closeData) {
-        Optional<JobPosition> position = jobRepository.findById(positionId);
-        if (position.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+        String reason = closeData.get("reason") != null ? closeData.get("reason").toString().trim() : "";
+        Long selectedCandidateId = null;
 
-        JobPosition job = position.get();
-        job.setStatus(JobPosition.Status.CLOSED);
-        job.setClosedAt(LocalDateTime.now());
-
-        String reason = (String) closeData.get("reason");
-        if (reason != null && !reason.trim().isEmpty()) {
-            job.setClosureReason(reason.trim());
-        }
-
-        String selectedCandidateId = (String) closeData.get("selectedCandidate");
-        if (selectedCandidateId != null && !selectedCandidateId.trim().isEmpty()) {
-            // Note: In a real implementation, you'd fetch the candidate by ID
-            // For now, we'll just store the ID as a string in closure reason if no reason
-            // provided
-            if (reason == null || reason.trim().isEmpty()) {
-                job.setClosureReason("Position closed - Selected candidate: " + selectedCandidateId);
+        Object candidateObj = closeData.get("selectedCandidate");
+        if (candidateObj != null) {
+            try {
+                selectedCandidateId = Long.valueOf(candidateObj.toString());
+            } catch (NumberFormatException ignored) {
+                return ResponseEntity.badRequest().body("Invalid candidate id provided");
             }
         }
 
-        JobPosition updated = jobRepository.save(job);
-        return ResponseEntity.ok(updated);
+        if ((reason == null || reason.isEmpty()) && selectedCandidateId == null) {
+            return ResponseEntity.badRequest()
+                    .body("Provide a closure reason or link a selected candidate");
+        }
+
+        try {
+            JobPosition updated = jobPositionService.closePosition(positionId, selectedCandidateId, reason);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to close position: " + e.getMessage());
+        }
     }
 
     // Update position status with reason
@@ -321,6 +392,12 @@ public class JobPositionController {
             JobPosition job = position.get();
             job.setStatus(enumStatus);
             job.setUpdatedAt(LocalDateTime.now());
+
+            if ((enumStatus == JobPosition.Status.ON_HOLD || enumStatus == JobPosition.Status.CLOSED)
+                    && (reason == null || reason.trim().isEmpty())) {
+                return ResponseEntity.badRequest()
+                        .body("Reason is required when putting a position on hold or closing it");
+            }
 
             if (reason != null && !reason.trim().isEmpty()) {
                 job.setClosureReason(reason.trim());

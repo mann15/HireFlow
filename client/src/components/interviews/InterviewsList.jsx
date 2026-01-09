@@ -8,10 +8,15 @@ const InterviewsList = ({ applicationId }) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchInterviews();
+    if (applicationId && applicationId !== "undefined" && applicationId !== "null") {
+      fetchInterviews();
+    }
   }, [applicationId]);
 
   const fetchInterviews = async () => {
+    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+      return;
+    }
     setLoading(true);
     try {
       const data = await getInterviewsByApplication(applicationId);
@@ -68,8 +73,11 @@ const InterviewsList = ({ applicationId }) => {
         >
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h4 className="font-semibold text-lg">{interview.roundName}</h4>
-              <p className="text-sm text-gray-600">{interview.roundType}</p>
+              {/* <pre>{JSON.stringify(interview, null, 2)}</pre> */}
+              <h4 className="font-semibold text-lg">
+                {interview.round.roundName}
+              </h4>
+              <p className="text-sm text-gray-600">{interview.round.roundType}</p>
             </div>
             {getStatusBadge(interview.status)}
           </div>
@@ -85,7 +93,7 @@ const InterviewsList = ({ applicationId }) => {
             </div>
             <div>
               <span className="text-gray-600">Mode:</span>{" "}
-              <span className="font-medium">{interview.mode}</span>
+              <span className="font-medium">{interview.interviewMode}</span>
             </div>
             {interview.interviewLink && (
               <div className="md:col-span-2">

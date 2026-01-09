@@ -8,8 +8,10 @@ import com.recruitment.server.repository.JobRepository;
 import com.recruitment.server.repository.PositionReviewerRepository;
 import com.recruitment.server.repository.UserRepository;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -21,74 +23,89 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class PositionReviewerService {
-    private final PositionReviewerRepository positionReviewerRepository;
-    private final JobRepository jobRepository;
-    private final UserRepository userRepository;
+        private final PositionReviewerRepository positionReviewerRepository;
+        private final JobRepository jobRepository;
+        private final UserRepository userRepository;
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Transactional
-    public PositionReviewerDTO assignReviewer(PositionReviewerDTO reviewerDTO) {
-        JobPosition position = jobRepository.findById(reviewerDTO.getPositionId())
-                .orElseThrow(() -> new RuntimeException("Position not found with id: " + reviewerDTO.getPositionId()));
+        @Transactional
+        public PositionReviewerDTO assignReviewer(PositionReviewerDTO reviewerDTO) {
+                // Validate input
+                if (reviewerDTO.getPositionId() == null) {
+                        throw new RuntimeException("Position ID cannot be null");
+                }
+                if (reviewerDTO.getReviewerId() == null) {
+                        throw new RuntimeException("Reviewer ID cannot be null");
+                }
+                if (reviewerDTO.getAssignedById() == null) {
+                        throw new RuntimeException("Assigned by ID cannot be null");
+                }
 
-        User reviewer = userRepository.findById(reviewerDTO.getReviewerId())
-                .orElseThrow(() -> new RuntimeException("Reviewer not found with id: " + reviewerDTO.getReviewerId()));
+                JobPosition position = jobRepository.findById(reviewerDTO.getPositionId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Position not found with id: " + reviewerDTO.getPositionId()));
 
-        User assignedBy = userRepository.findById(reviewerDTO.getAssignedById())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + reviewerDTO.getAssignedById()));
+                User reviewer = userRepository.findById(reviewerDTO.getReviewerId())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "Reviewer not found with id: " + reviewerDTO.getReviewerId()));
 
-        // Check if the reviewer is already assigned to this position
-        if (positionReviewerRepository.existsByPositionAndReviewer(position, reviewer)) {
-            throw new RuntimeException("Reviewer is already assigned to this position");
+                User assignedBy = userRepository.findById(reviewerDTO.getAssignedById())
+                                .orElseThrow(() -> new RuntimeException(
+                                                "User not found with id: " + reviewerDTO.getAssignedById()));
+
+                // Check if the reviewer is already assigned to this position
+                if (positionReviewerRepository.existsByPositionAndReviewer(position, reviewer)) {
+                        throw new RuntimeException("Reviewer is already assigned to this position");
+                }
+
+                PositionReviewer positionReviewer = PositionReviewer.builder()
+                                .position(position)
+                                .reviewer(reviewer)
+                                .assignedBy(assignedBy)
+                                .assignedAt(LocalDateTime.now())
+                                .build();
+
+                return mapToDTO(positionReviewerRepository.save(positionReviewer));
         }
 
-        PositionReviewer positionReviewer = PositionReviewer.builder()
-                .position(position)
-                .reviewer(reviewer)
-                .assignedBy(assignedBy)
-                .assignedAt(LocalDateTime.now())
-                .build();
+        @Transactional
+        public void removeReviewer(Long positionId, Long reviewerId) {
+                long deleted = positionReviewerRepository
+                                .deleteByPositionPositionIdAndReviewerUserId(positionId, reviewerId);
 
-        return mapToDTO(positionReviewerRepository.save(positionReviewer));
-    }
+                if (deleted == 0) {
+                        throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                        "Position reviewer mapping not found for positionId=" + positionId
+                                                        + " and reviewerId=" + reviewerId);
+                }
+        }
 
-    @Transactional
-    public void removeReviewer(Long positionId, Long reviewerId) {
-        JobPosition position = jobRepository.findById(positionId)
-                .orElseThrow(() -> new RuntimeException("Position not found with id: " + positionId));
+        @Transactional(readOnly = true)
+        public List<PositionReviewerDTO> getReviewersByPositionId(Long positionId) {
+                List<PositionReviewer> reviewers = positionReviewerRepository.findByPositionPositionId(positionId);
+                return reviewers.stream().map(this::mapToDTO).collect(Collectors.toList());
+        }
 
-        User reviewer = userRepository.findById(reviewerId)
-                .orElseThrow(() -> new RuntimeException("Reviewer not found with id: " + reviewerId));
+        @Transactional(readOnly = true)
+        public List<PositionReviewerDTO> getPositionsByReviewerId(Long reviewerId) {
+                List<PositionReviewer> positions = positionReviewerRepository.findByReviewerUserId(reviewerId);
+                return positions.stream().map(this::mapToDTO).collect(Collectors.toList());
+        }
 
-        positionReviewerRepository.deleteByPositionAndReviewer(position, reviewer);
-    }
-
-    @Transactional(readOnly = true)
-    public List<PositionReviewerDTO> getReviewersByPositionId(Long positionId) {
-        List<PositionReviewer> reviewers = positionReviewerRepository.findByPositionPositionId(positionId);
-        return reviewers.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<PositionReviewerDTO> getPositionsByReviewerId(Long reviewerId) {
-        List<PositionReviewer> positions = positionReviewerRepository.findByReviewerUserId(reviewerId);
-        return positions.stream().map(this::mapToDTO).collect(Collectors.toList());
-    }
-
-    private PositionReviewerDTO mapToDTO(PositionReviewer positionReviewer) {
-        return PositionReviewerDTO.builder()
-                .id(positionReviewer.getId())
-                .positionId(positionReviewer.getPosition().getPositionId())
-                .positionTitle(positionReviewer.getPosition().getJobTitle())
-                .reviewerId(positionReviewer.getReviewer().getUserId())
-                .reviewerName(positionReviewer.getReviewer().getFirstName() + " "
-                        + positionReviewer.getReviewer().getLastName())
-                .reviewerEmail(positionReviewer.getReviewer().getEmail())
-                .assignedById(positionReviewer.getAssignedBy().getUserId())
-                .assignedByName(positionReviewer.getAssignedBy().getFirstName() + " "
-                        + positionReviewer.getAssignedBy().getLastName())
-                .assignedAt(positionReviewer.getAssignedAt().format(formatter))
-                .build();
-    }
+        private PositionReviewerDTO mapToDTO(PositionReviewer positionReviewer) {
+                return PositionReviewerDTO.builder()
+                                .id(positionReviewer.getId())
+                                .positionId(positionReviewer.getPosition().getPositionId())
+                                .positionTitle(positionReviewer.getPosition().getJobTitle())
+                                .reviewerId(positionReviewer.getReviewer().getUserId())
+                                .reviewerName(positionReviewer.getReviewer().getFirstName() + " "
+                                                + positionReviewer.getReviewer().getLastName())
+                                .reviewerEmail(positionReviewer.getReviewer().getEmail())
+                                .assignedById(positionReviewer.getAssignedBy().getUserId())
+                                .assignedByName(positionReviewer.getAssignedBy().getFirstName() + " "
+                                                + positionReviewer.getAssignedBy().getLastName())
+                                .assignedAt(positionReviewer.getAssignedAt().format(formatter))
+                                .build();
+        }
 }

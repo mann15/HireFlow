@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { getApplicationById } from "../../services/applicationService";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchApplicationById, updateApplication } from "../../redux/thunks/applicationThunks";
 import {
   moveToScreening,
   moveToInterview,
@@ -8,34 +9,74 @@ import {
   selectCandidate,
 } from "../../services/applicationService";
 import { format } from "date-fns";
+import ConfirmationModal from "../common/ConfirmationModal";
+import {
+  showError,
+  showSuccess,
+  showWarning,
+  getErrorMessage,
+} from "../../utils/toastUtils";
 
 const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
-  const [application, setApplication] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { currentApplication, loading } = useSelector((state) => state.application);
   const [actionLoading, setActionLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
+  const [confirmSelectModal, setConfirmSelectModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
   const [reason, setReason] = useState("");
 
   useEffect(() => {
-    fetchApplication();
-  }, [applicationId]);
-
-  const fetchApplication = async () => {
-    setLoading(true);
-    try {
-      const data = await getApplicationById(applicationId);
-      setApplication(data);
-    } catch (err) {
-      console.error("Failed to fetch application:", err);
-    } finally {
-      setLoading(false);
+    // Fetch only if we do not already have application data to avoid repeated refetch loops
+    // Also validate applicationId is not undefined or invalid
+    if (
+      applicationId &&
+      applicationId !== "undefined" &&
+      applicationId !== "null" &&
+      !currentApplication
+    ) {
+      dispatch(fetchApplicationById(applicationId));
     }
-  };
+  }, [dispatch, applicationId, currentApplication]);
 
-  const handleAction = async (action, needsReason = false) => {
+  const application = currentApplication;
+
+  // Show loading state while fetching
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-center py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no application found
+  if (!application) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-center py-8 text-gray-500">
+          <p className="text-lg font-medium">Application not found</p>
+          <p className="text-sm mt-2">The requested application could not be loaded.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const executeAction = async (action, needsReason = false) => {
+    // Validate applicationId before proceeding
+    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+      showError("Invalid application ID");
+      return;
+    }
+
     if (needsReason && !reason.trim()) {
-      alert("Please provide a reason");
+      showWarning("Please provide a reason");
       return;
     }
 
@@ -59,21 +100,37 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
           setReason("");
           break;
         case "SELECT":
-          if (
-            window.confirm("Are you sure you want to select this candidate?")
-          ) {
-            await selectCandidate(applicationId);
-          }
+          await selectCandidate(applicationId);
+          setConfirmSelectModal(false);
+          break;
+        default:
           break;
       }
-      alert("Application status updated successfully!");
-      await fetchApplication();
-      if (onUpdate) onUpdate();
+      showSuccess("Application status updated successfully!");
+      // Refresh application data after status change
+      if (applicationId && applicationId !== "undefined" && applicationId !== "null") {
+        dispatch(fetchApplicationById(applicationId));
+      }
+      // Notify parent component if callback provided
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to update application");
+      showError(getErrorMessage(err, "Failed to update application"));
     } finally {
       setActionLoading(false);
+      setPendingAction(null);
     }
+  };
+
+  const handleAction = (action, needsReason = false) => {
+    if (action === "SELECT") {
+      setPendingAction(action);
+      setConfirmSelectModal(true);
+      return;
+    }
+
+    void executeAction(action, needsReason);
   };
 
   const getStatusColor = (status) => {
@@ -88,16 +145,6 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
-
-  if (loading) {
-    return <div className="text-center py-8">Loading...</div>;
-  }
-
-  if (!application) {
-    return (
-      <div className="text-center py-8 text-red-600">Application not found</div>
-    );
-  }
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -117,21 +164,21 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
           </div>
           <div>
             <p className="text-sm text-gray-600">Current Stage</p>
-            <p className="font-medium">{application.currentStage}</p>
+            <p className="font-medium">{application.currentStage || "-"}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Applied Date</p>
             <p className="font-medium">
-              {application.appliedDate
-                ? format(new Date(application.appliedDate), "PPP")
+              {application.appliedAt
+                ? format(new Date(application.appliedAt), "PPP")
                 : "N/A"}
             </p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Last Updated</p>
             <p className="font-medium">
-              {application.lastUpdated
-                ? format(new Date(application.lastUpdated), "PPP")
+              {application.statusUpdatedAt
+                ? format(new Date(application.statusUpdatedAt), "PPP")
                 : "N/A"}
             </p>
           </div>
@@ -271,6 +318,19 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={confirmSelectModal}
+        title="Select Candidate"
+        message="Are you sure you want to mark this candidate as selected?"
+        confirmText="Yes, select"
+        cancelText="No"
+        loading={actionLoading}
+        onCancel={() => {
+          setConfirmSelectModal(false);
+          setPendingAction(null);
+        }}
+        onConfirm={() => pendingAction && executeAction(pendingAction)}
+      />
     </div>
   );
 };

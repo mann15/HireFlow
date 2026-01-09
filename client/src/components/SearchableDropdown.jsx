@@ -84,9 +84,7 @@ const SearchableDropdown = ({
           onClick={() => setIsOpen(!isOpen)}
         >
           <span className={displayText ? "text-gray-900" : "text-gray-400"}>
-            {loading
-              ? "Loading..."
-              : displayText || placeholder}
+            {loading ? "Loading..." : displayText || placeholder}
           </span>
           <div className="flex items-center gap-2">
             {value && !loading && (
@@ -122,7 +120,7 @@ const SearchableDropdown = ({
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--primary-color)' }}
+                style={{ "--tw-ring-color": "var(--primary-color)" }}
                 placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -144,11 +142,22 @@ const SearchableDropdown = ({
                       option.value == value ? "" : ""
                     }`}
                     style={{
-                      backgroundColor: option.value == value ? 'var(--primary-50)' : 'transparent',
-                      ':hover': { backgroundColor: 'var(--primary-50)' }
+                      backgroundColor:
+                        option.value == value
+                          ? "var(--primary-50)"
+                          : "transparent",
+                      ":hover": { backgroundColor: "var(--primary-50)" },
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-50)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = option.value == value ? 'var(--primary-50)' : 'transparent'}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        "var(--primary-50)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        option.value == value
+                          ? "var(--primary-50)"
+                          : "transparent")
+                    }
                     onClick={() => handleSelect(option)}
                   >
                     <div className="font-medium text-gray-900">

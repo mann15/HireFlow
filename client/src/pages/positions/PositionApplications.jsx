@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { getApplicationsByPosition } from "../../services/positionService";
 
 const PositionApplications = () => {
@@ -35,6 +35,12 @@ const PositionApplications = () => {
                     ? new Date(a.appliedAt).toLocaleDateString()
                     : "-"}
                 </div>
+                <Link
+                  className="text-blue-600 hover:underline text-sm"
+                  to={`/positions/${id}/applications/${a.applicationId}/review`}
+                >
+                  Review
+                </Link>
               </div>
             </li>
           ))}

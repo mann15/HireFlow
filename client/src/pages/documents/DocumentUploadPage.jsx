@@ -10,6 +10,19 @@ const DocumentUploadPage = () => {
   const candidateId =
     currentUser?.candidateId || currentUser?.id || currentUser?.userId;
 
+  // Validate applicationId
+  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    return (
+      <div className="min-h-screen pt-24 px-6 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <p className="text-red-700">Invalid application ID. Please navigate from a valid application.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pt-24 px-6 bg-gray-50">
       <div className="max-w-4xl mx-auto space-y-4">

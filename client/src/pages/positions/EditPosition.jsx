@@ -18,7 +18,8 @@ const EditPosition = () => {
   const [skills, setSkills] = useState({ required: [], preferred: [] });
   const [statusReason, setStatusReason] = useState("");
   const [applications, setApplications] = useState([]);
-  const [selectedCandidates, setSelectedCandidates] = useState([]); // multi-select
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -46,7 +47,8 @@ const EditPosition = () => {
                 a?.candidate?.candidateId === p.selectedCandidate.candidateId
             );
             if (matched?.applicationId) {
-              setSelectedCandidates([String(matched.applicationId)]);
+              setSelectedApplicationId(String(matched.applicationId));
+              setSelectedCandidateId(p.selectedCandidate.candidateId);
             }
           }
         } catch (aErr) {
@@ -65,8 +67,12 @@ const EditPosition = () => {
     e.preventDefault();
 
     // Validate required fields based on status
-    if (position.status !== "OPEN" && !statusReason.trim()) {
-      setError("Reason is required when changing position status");
+    if (
+      position.status !== "OPEN" &&
+      !statusReason.trim() &&
+      !selectedCandidateId
+    ) {
+      setError("Provide a reason or pick a candidate for non-open statuses");
       return;
     }
 
@@ -93,15 +99,12 @@ const EditPosition = () => {
         } else if (position.status === "CLOSED") {
           const selectedIds = (selectedCandidates || []).filter(Boolean);
 
-          if (selectedIds.length > 0) {
-            // mark selected applications so the position tracks the chosen candidate
-            await Promise.all(
-              selectedIds.map((appId) => selectCandidate(Number(appId)))
-            );
+          if (selectedApplicationId) {
+            await selectCandidate(Number(selectedApplicationId));
           }
 
           await closePosition(id, {
-            selectedCandidate: selectedIds.join(",") || null,
+            selectedCandidate: selectedCandidateId,
             reason: statusReason,
           });
         }
@@ -510,7 +513,7 @@ const EditPosition = () => {
         {position.status === "CLOSED" && (
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Select Applied Candidate(s)
+              Select Applied Candidate
             </label>
             {applications.length === 0 ? (
               <div className="text-gray-500">
@@ -518,17 +521,20 @@ const EditPosition = () => {
               </div>
             ) : (
               <select
-                multiple
-                value={selectedCandidates}
+                value={selectedApplicationId || ""}
                 onChange={(e) => {
-                  const opts = Array.from(e.target.selectedOptions).map(
-                    (o) => o.value
+                  const appId = e.target.value || null;
+                  setSelectedApplicationId(appId);
+                  const matched = applications.find(
+                    (app) => String(app.applicationId) === appId
                   );
-                  setSelectedCandidates(opts);
+                  setSelectedCandidateId(
+                    matched?.candidate?.candidateId || null
+                  );
                 }}
                 className="w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"
-                size={Math.min(6, applications.length)}
               >
+                <option value="">-- Select candidate/application --</option>
                 {applications.map((app) => (
                   <option
                     key={app.applicationId}

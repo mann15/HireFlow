@@ -35,6 +35,8 @@ public class CandidateService {
         private final UserRepository userRepository;
         private final RoleRepository roleRepository;
         private final PasswordEncoder passwordEncoder;
+        private final EmailService emailService;
+        private final PasswordResetTokenRepository passwordResetTokenRepository;
 
         // Local upload directory was removed in favor of Cloudinary when configured
 
@@ -223,14 +225,17 @@ public class CandidateService {
                 Candidate candidate = candidateRepository.findById(candidateId)
                                 .orElseThrow(() -> new RuntimeException("Candidate not found"));
 
-                JobPosition position = jobRepository.findById(positionId)
-                                .orElseThrow(() -> new RuntimeException("Position not found"));
+                JobPosition position = null;
+                if (positionId != null) {
+                        position = jobRepository.findById(positionId)
+                                        .orElseThrow(() -> new RuntimeException("Position not found"));
+                }
 
                 // Use CVProcessingService to upload and extract
                 CVProcessingService.CVUploadResult uploadResult = cvProcessingService.processAndUpload(file,
                                 candidateId, positionId);
 
-                // Build CV record (position is required for this upload path)
+                // Build CV record (position is optional for this upload path)
                 CandidateCV candidateCV = CandidateCV.builder()
                                 .candidate(candidate)
                                 .positionId(position)
@@ -240,6 +245,8 @@ public class CandidateService {
                                 .cloudUrl(uploadResult.getCloudUrl())
                                 .extractedData(uploadResult.getExtractedJson() != null ? uploadResult.getExtractedJson()
                                                 : uploadResult.getExtractedText())
+                                .fileName(file.getOriginalFilename())
+                                .uploadedAt(LocalDateTime.now())
                                 .build();
 
                 CandidateCV savedCv = candidateCVRepository.save(candidateCV);
@@ -382,14 +389,16 @@ public class CandidateService {
                                         savedCv.setCandidate(candidateObj);
                                         candidateCVRepository.save(savedCv);
                                         // create application linking candidate, position and cv
-                                        JobApplication application = JobApplication.builder()
-                                                        .candidate(candidateObj)
-                                                        .position(position)
-                                                        .cv(savedCv)
-                                                        .status(JobApplication.Status.APPLIED)
-                                                        .build();
-                                        JobApplication savedApp = jobApplicationRepository.save(application);
-                                        resp.put("application", savedApp);
+                                        if (position != null) {
+                                                JobApplication application = JobApplication.builder()
+                                                                .candidate(candidateObj)
+                                                                .position(position)
+                                                                .cv(savedCv)
+                                                                .status(JobApplication.Status.APPLIED)
+                                                                .build();
+                                                JobApplication savedApp = jobApplicationRepository.save(application);
+                                                resp.put("application", savedApp);
+                                        }
 
                                         // If parsed JSON contained skills array, try to map to existing Skills and save
                                         // CandidateSkills
@@ -610,7 +619,9 @@ public class CandidateService {
                                 .cloudPublicId(uploadResult.getCloudPublicId())
                                 .cloudUrl(uploadResult.getCloudUrl())
                                 .extractedData(uploadResult.getExtractedJson() != null ? uploadResult.getExtractedJson()
-                                                : uploadResult.getExtractedText());
+                                                : uploadResult.getExtractedText())
+                                .fileName(file.getOriginalFilename())
+                                .uploadedAt(LocalDateTime.now());
 
                 if (position != null)
                         cvBuilder.positionId(position);
@@ -794,6 +805,25 @@ public class CandidateService {
                         candidates = candidates.stream()
                                         .filter(c -> c.getExpectedSalary() != null &&
                                                         c.getExpectedSalary().compareTo(maxSalary) <= 0)
+                                        .collect(Collectors.toList());
+                }
+
+                if (skills != null && !skills.isEmpty()) {
+                        final Set<String> skillSet = skills.stream()
+                                        .filter(Objects::nonNull)
+                                        .map(String::trim)
+                                        .filter(s -> !s.isEmpty())
+                                        .map(String::toLowerCase)
+                                        .collect(Collectors.toSet());
+
+                        candidates = candidates.stream()
+                                        .filter(c -> {
+                                                List<CandidateSkills> cs = candidateSkillsRepository.findByCandidate(c);
+                                                return cs.stream()
+                                                                .anyMatch(s -> skillSet.contains(
+                                                                                s.getSkill().getSkillName()
+                                                                                                .toLowerCase()));
+                                        })
                                         .collect(Collectors.toList());
                 }
 

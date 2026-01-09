@@ -57,6 +57,10 @@ export const submitFeedback = async (interviewId, feedbackData) => {
 
 // Get interviews by application
 export const getInterviewsByApplication = async (applicationId) => {
+  // Validate applicationId
+  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    throw new Error("Invalid application ID");
+  }
   const response = await api.get(`${BASE}/application/${applicationId}`);
   return response.data;
 };

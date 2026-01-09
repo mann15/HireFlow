@@ -28,7 +28,7 @@ export const getApplicationsByPosition = async (positionId) => {
     return res.data;
   } catch (err) {
     try {
-      const res2 = await api.get(`/api/applications`, {
+      const res2 = await api.get(`/applications`, {
         params: { positionId },
       });
       return res2.data;

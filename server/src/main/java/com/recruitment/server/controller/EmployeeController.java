@@ -42,7 +42,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','VIEWER')")
     public ResponseEntity<?> getAllEmployees(@RequestParam(required = false) String status,
             @RequestParam(required = false) String department) {
         try {
@@ -63,7 +63,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/{employeeId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','VIEWER')")
     public ResponseEntity<?> getEmployeeById(@PathVariable Long employeeId) {
         try {
             Employee employee = employeeService.getEmployeeById(employeeId);
@@ -74,7 +74,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/code/{employeeCode}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','VIEWER')")
     public ResponseEntity<?> getEmployeeByCode(@PathVariable String employeeCode) {
         try {
             Employee employee = employeeService.getEmployeeByCode(employeeCode);
@@ -85,7 +85,7 @@ public class EmployeeController {
     }
 
     @GetMapping("/candidate/{candidateId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','VIEWER')")
     public ResponseEntity<?> getEmployeeByCandidate(@PathVariable Long candidateId) {
         try {
             Employee employee = employeeService.getEmployeeByCandidate(candidateId);

@@ -104,7 +104,7 @@ const Navbar = () => {
   const navigationItems = getNavigationItems();
 
   return (
-    <nav className="fixed top-0 w-screen bg-[var(--primary-50)] text-[var(--secondary-color)] shadow-md h-20 overflow-hidden z-50">
+    <nav className="fixed top-0 w-screen bg-[var(--primary-50)] text-[var(--secondary-color)] shadow-md h-20 overflow-visible z-50">
       <div className="container mx-auto flex justify-between items-center h-full">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-2/5 overflow-hidden rounded-lg flex items-center justify-center">

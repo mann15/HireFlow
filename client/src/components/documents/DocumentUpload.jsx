@@ -1,5 +1,13 @@
-import { useState } from "react";
-import { uploadDocument } from "../../services/documentService";
+import { useEffect, useState } from "react";
+import {
+  uploadDocument,
+  getDocumentTypes,
+} from "../../services/documentService";
+import {
+  getErrorMessage,
+  showError,
+  showSuccess,
+} from "../../utils/toastUtils";
 
 const DocumentUpload = ({ applicationId, candidateId, onUploadComplete }) => {
   const [formData, setFormData] = useState({
@@ -8,15 +16,28 @@ const DocumentUpload = ({ applicationId, candidateId, onUploadComplete }) => {
   });
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [documentTypes, setDocumentTypes] = useState([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
 
-  const documentTypes = [
-    { id: 1, name: "ID Proof (Aadhar/PAN/Passport)" },
-    { id: 2, name: "Educational Certificates" },
-    { id: 3, name: "Experience Letters" },
-    { id: 4, name: "Address Proof" },
-    { id: 5, name: "Photo" },
-    { id: 6, name: "Other Documents" },
-  ];
+  useEffect(() => {
+    const fetchTypes = async () => {
+      setLoadingTypes(true);
+      try {
+        const types = await getDocumentTypes();
+        setDocumentTypes(types || []);
+      } catch (err) {
+        // If we fail to load types, show a helpful error
+        setError(
+          err.response?.data?.error ||
+            "Failed to load document types. Please contact support."
+        );
+      } finally {
+        setLoadingTypes(false);
+      }
+    };
+
+    fetchTypes();
+  }, []);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -27,6 +48,13 @@ const DocumentUpload = ({ applicationId, candidateId, onUploadComplete }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate applicationId
+    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+      showError("Invalid application ID");
+      setError("Invalid application ID");
+      return;
+    }
     setUploading(true);
     setError("");
 
@@ -38,12 +66,14 @@ const DocumentUpload = ({ applicationId, candidateId, onUploadComplete }) => {
       formDataToSend.append("file", formData.file);
 
       await uploadDocument(formDataToSend);
-      alert("Document uploaded successfully!");
+      showSuccess("Document uploaded successfully!");
       setFormData({ documentTypeId: "", file: null });
       e.target.reset();
       if (onUploadComplete) onUploadComplete();
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to upload document");
+      const message = getErrorMessage(err, "Failed to upload document");
+      setError(message);
+      showError(message);
     } finally {
       setUploading(false);
     }
@@ -72,8 +102,15 @@ const DocumentUpload = ({ applicationId, candidateId, onUploadComplete }) => {
               }
               className="w-full border border-gray-300 rounded-md px-3 py-2"
               required
+              disabled={loadingTypes || documentTypes.length === 0}
             >
-              <option value="">Select Document Type</option>
+              <option value="">
+                {loadingTypes
+                  ? "Loading document types..."
+                  : documentTypes.length === 0
+                  ? "No document types available"
+                  : "Select Document Type"}
+              </option>
               {documentTypes.map((type) => (
                 <option key={type.id} value={type.id}>
                   {type.name}

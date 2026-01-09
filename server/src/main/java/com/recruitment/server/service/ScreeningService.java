@@ -37,6 +37,11 @@ public class ScreeningService {
 
     @Transactional
     public ScreeningFeedbackDTO submitScreeningFeedback(ScreeningFeedbackDTO feedbackDTO) {
+        if (feedbackDTO.getApplicationId() == null || feedbackDTO.getReviewerId() == null
+                || feedbackDTO.getRecommendation() == null) {
+            throw new IllegalArgumentException("applicationId, reviewerId, and recommendation are required");
+        }
+
         // Get the application
         JobApplication application = jobApplicationRepository.findById(feedbackDTO.getApplicationId())
                 .orElseThrow(

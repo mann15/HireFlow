@@ -20,8 +20,8 @@ public class JobPositionService {
     private final JobApplicationRepository jobApplicationRepository;
     private final PositionReviewerRepository positionReviewerRepository;
     private final UserRepository userRepository;
-    private final ScreeningCommentRepository screeningCommentRepository;
     private final NotificationService notificationService;
+    private final NotificationRepository notificationRepository;
 
     public void assignReviewer(Long positionId, Long reviewerId) {
         JobPosition position = jobRepository.findById(positionId)
@@ -54,7 +54,7 @@ public class JobPositionService {
     }
 
     public void addComment(Long positionId, CommentRequest commentRequest) {
-        JobPosition position = jobRepository.findById(positionId)
+        jobRepository.findById(positionId)
                 .orElseThrow(() -> new RuntimeException("Position not found"));
         
         // This would typically be associated with a specific application
@@ -85,9 +85,7 @@ public class JobPositionService {
     }
 
     public List<Notification> getNotifications(Long positionId) {
-        // This would return notifications related to a position
-        // Implementation depends on how you want to filter notifications
-        return List.of();
+        return notificationRepository.findByRelatedEntityIdOrderByCreatedAtDesc(positionId);
     }
 
     public JobPosition createPosition(JobPosition position, User createdBy) {
@@ -169,5 +167,57 @@ public class JobPositionService {
 
     public List<JobPosition> getPositionsByCreator(User creator) {
         return jobRepository.findByCreatedBy(creator);
+    }
+
+    /**
+     * Get positions filtered by user role
+     * - REVIEWER: Only positions they're assigned to
+     * - RECRUITER: Only positions they created
+     * - HR, ADMIN, SUPER_ADMIN, VIEWER: All positions
+     */
+    public List<JobPosition> getPositionsByRole(User user) {
+        String roleName = user.getRole().getRoleName();
+        
+        switch (roleName) {
+            case "REVIEWER":
+                // Get positions where reviewer is assigned
+                List<PositionReviewer> reviewerAssignments = positionReviewerRepository
+                        .findByReviewerUserId(user.getUserId());
+                return reviewerAssignments.stream()
+                        .map(PositionReviewer::getPosition)
+                        .distinct()
+                        .toList();
+            case "RECRUITER":
+                return jobRepository.findByCreatedBy(user);
+            case "HR":
+            case "ADMIN":
+            case "SUPER_ADMIN":
+            case "VIEWER":
+                return jobRepository.findAll();
+            default:
+                return List.of();
+        }
+    }
+
+    /**
+     * Check if user has access to a specific position based on their role
+     */
+    public boolean hasAccessToPosition(User user, JobPosition position) {
+        String roleName = user.getRole().getRoleName();
+        
+        switch (roleName) {
+            case "REVIEWER":
+                return positionReviewerRepository.existsByPositionAndReviewer(position, user);
+            case "RECRUITER":
+                return position.getCreatedBy() != null &&
+                       position.getCreatedBy().getUserId().equals(user.getUserId());
+            case "HR":
+            case "ADMIN":
+            case "SUPER_ADMIN":
+            case "VIEWER":
+                return true;
+            default:
+                return false;
+        }
     }
 }

@@ -22,18 +22,18 @@ public class ScreeningController {
 
     @PostMapping("/feedback")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
-    public ResponseEntity<ScreeningFeedbackDTO> submitFeedback(@RequestBody ScreeningFeedbackDTO feedbackDTO) {
+    public ResponseEntity<ScreeningFeedbackDTO> submitFeedback(@Valid @RequestBody ScreeningFeedbackDTO feedbackDTO) {
         return ResponseEntity.ok(screeningService.submitScreeningFeedback(feedbackDTO));
     }
 
     @GetMapping("/feedback/application/{applicationId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<List<ScreeningFeedbackDTO>> getFeedbacksByApplication(@PathVariable Long applicationId) {
         return ResponseEntity.ok(screeningService.getFeedbacksByApplicationId(applicationId));
     }
 
     @GetMapping("/feedback/application/{applicationId}/latest")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<ScreeningFeedbackDTO> getLatestFeedback(@PathVariable Long applicationId) {
         ScreeningFeedbackDTO feedback = screeningService.getLatestFeedbackByApplicationId(applicationId);
         if (feedback == null) {
@@ -49,13 +49,13 @@ public class ScreeningController {
     }
 
     @GetMapping("/comments/application/{applicationId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<List<ScreeningCommentDTO>> getCommentsByApplication(@PathVariable Long applicationId) {
         return ResponseEntity.ok(screeningService.getCommentsByApplicationId(applicationId));
     }
 
     @GetMapping("/notifications/application/{applicationId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<List<CandidateHistoryNotificationDTO>> getNotificationsByApplication(
             @PathVariable Long applicationId) {
         return ResponseEntity.ok(screeningService.getHistoryNotificationsByApplicationId(applicationId));

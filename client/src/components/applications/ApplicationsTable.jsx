@@ -1,43 +1,19 @@
 import { useState, useEffect } from "react";
-import {
-  getAllApplications,
-  getApplicationsByPosition,
-} from "../../services/applicationService";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchApplications } from "../../redux/thunks/applicationThunks";
+import { setFilters } from "../../redux/applicationSlice";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 
 const ApplicationsTable = ({ positionId = null }) => {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { applications, loading } = useSelector((state) => state.application);
   const [filter, setFilter] = useState("ALL");
 
   useEffect(() => {
-    fetchApplications();
-  }, [positionId, filter]);
-
-  const fetchApplications = async () => {
-    setLoading(true);
-    try {
-      let data;
-      if (positionId) {
-        data = await getApplicationsByPosition(positionId);
-      } else {
-        data = await getAllApplications();
-      }
-
-      // Apply filter
-      if (filter !== "ALL") {
-        data = data.filter((app) => app.status === filter);
-      }
-
-      setApplications(data);
-    } catch (err) {
-      console.error("Failed to fetch applications:", err);
-      setApplications([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchApplications({ positionId, status: filter }));
+    dispatch(setFilters({ positionId, status: filter }));
+  }, [dispatch, positionId, filter]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -108,18 +84,26 @@ const ApplicationsTable = ({ positionId = null }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {applications.map((app) => (
-                <tr key={app.id} className="hover:bg-gray-50">
+              {applications.map((app, index) => (
+                <tr
+                  key={
+                    app.id ||
+                    `${app.positionId || "pos"}-${
+                      app.candidateId || "cand"
+                    }-${index}`
+                  }
+                  className="hover:bg-gray-50"
+                >
                   <td className="px-4 py-3">
                     <div>
-                      <p className="font-medium">{app.candidateName}</p>
+                      <p className="font-medium">{app.candidate.firstName}</p>
                       <p className="text-sm text-gray-500">
-                        {app.candidateEmail}
+                        {app.candidate.email}
                       </p>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-medium">{app.positionTitle}</p>
+                    <p className="font-medium">{app.position.jobTitle}</p>
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -132,13 +116,13 @@ const ApplicationsTable = ({ positionId = null }) => {
                   </td>
                   <td className="px-4 py-3 text-sm">{app.currentStage}</td>
                   <td className="px-4 py-3 text-sm">
-                    {app.appliedDate
-                      ? format(new Date(app.appliedDate), "PP")
+                    {app.appliedAt
+                      ? format(new Date(app.appliedAt), "PP")
                       : "N/A"}
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      to={`/applications/${app.id}`}
+                      to={`/applications/${app.applicationId}`}
                       className="text-blue-600 hover:text-blue-800 text-sm"
                     >
                       View Details

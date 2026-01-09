@@ -1,53 +1,40 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
-  getUnreadCount,
-  getUnreadNotifications,
-  markAsRead,
-} from "../../services/notificationService";
+  fetchUnreadCount,
+  fetchNotifications,
+  markNotificationAsRead,
+} from "../../redux/thunks/notificationThunks";
 import { Link } from "react-router-dom";
 
 const NotificationBell = () => {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const dispatch = useDispatch();
+  const { unreadCount, notifications } = useSelector((state) => state.notification);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState([]);
 
   useEffect(() => {
-    fetchUnreadCount();
+    dispatch(fetchUnreadCount());
     // Refresh every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
+    const interval = setInterval(() => {
+      dispatch(fetchUnreadCount());
+    }, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (showDropdown) {
-      fetchRecentNotifications();
+      dispatch(fetchNotifications(false)); // Fetch unread only
     }
-  }, [showDropdown]);
+  }, [dispatch, showDropdown]);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const count = await getUnreadCount();
-      setUnreadCount(count);
-    } catch (err) {
-      console.error("Failed to fetch unread count:", err);
-    }
-  };
-
-  const fetchRecentNotifications = async () => {
-    try {
-      const data = await getUnreadNotifications();
-      setRecentNotifications(data.slice(0, 5)); // Show only 5 recent
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-    }
-  };
+  const recentNotifications = notifications.slice(0, 5); // Show only 5 recent
 
   const handleMarkAsRead = async (notificationId, e) => {
     e.stopPropagation();
     try {
-      await markAsRead(notificationId);
-      await fetchUnreadCount();
-      await fetchRecentNotifications();
+      await dispatch(markNotificationAsRead(notificationId));
+      dispatch(fetchUnreadCount());
+      dispatch(fetchNotifications(false));
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }

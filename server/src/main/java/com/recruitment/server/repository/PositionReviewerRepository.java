@@ -15,6 +15,8 @@ public interface PositionReviewerRepository extends JpaRepository<PositionReview
 
     Optional<PositionReviewer> findByPositionPositionIdAndReviewerUserId(Long positionId, Long reviewerId);
 
+    long deleteByPositionPositionIdAndReviewerUserId(Long positionId, Long reviewerId);
+
     boolean existsByPositionAndReviewer(JobPosition position, User reviewer);
 
     void deleteByPositionAndReviewer(JobPosition position, User reviewer);

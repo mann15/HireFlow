@@ -38,22 +38,58 @@ public class ApplicationController {
     }
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<?> getAllApplications(@RequestParam(required = false) Long positionId,
             @RequestParam(required = false) Long candidateId,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            Authentication authentication) {
         try {
+            // Get current user
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            String roleName = currentUser.getRole().getRoleName();
             List<JobApplication> applications;
+
+            // Apply role-based filtering for REVIEWER, INTERVIEWER, and RECRUITER
+            // HR, ADMIN, SUPER_ADMIN, and VIEWER can see all applications
+            boolean needsRoleFiltering = roleName.equals("REVIEWER") || 
+                                       roleName.equals("INTERVIEWER") || 
+                                       roleName.equals("RECRUITER");
 
             if (positionId != null) {
                 applications = applicationService.getApplicationsByPosition(positionId);
+                // Apply role-based filtering even when positionId is specified
+                if (needsRoleFiltering) {
+                    applications = applications.stream()
+                            .filter(app -> applicationService.hasAccessToApplication(currentUser, app))
+                            .toList();
+                }
             } else if (candidateId != null) {
                 applications = applicationService.getApplicationsByCandidate(candidateId);
+                // Apply role-based filtering even when candidateId is specified
+                if (needsRoleFiltering) {
+                    applications = applications.stream()
+                            .filter(app -> applicationService.hasAccessToApplication(currentUser, app))
+                            .toList();
+                }
             } else if (status != null) {
                 applications = applicationService.getApplicationsByStatus(
                         JobApplication.Status.valueOf(status));
+                // Apply role-based filtering even when status is specified
+                if (needsRoleFiltering) {
+                    applications = applications.stream()
+                            .filter(app -> applicationService.hasAccessToApplication(currentUser, app))
+                            .toList();
+                }
             } else {
-                applications = applicationService.getAllApplications();
+                // Use role-based filtering for the main query
+                if (needsRoleFiltering) {
+                    applications = applicationService.getApplicationsByRole(currentUser);
+                } else {
+                    applications = applicationService.getAllApplications();
+                }
             }
 
             return ResponseEntity.ok(applications);
@@ -63,10 +99,23 @@ public class ApplicationController {
     }
 
     @GetMapping("/{applicationId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getApplicationById(@PathVariable Long applicationId) {
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','REVIEWER','INTERVIEWER','VIEWER')")
+    public ResponseEntity<?> getApplicationById(@PathVariable Long applicationId,
+            Authentication authentication) {
         try {
+            // Get current user
+            String email = authentication.getName();
+            User currentUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
             JobApplication application = applicationService.getApplicationById(applicationId);
+            
+            // Check if user has access to this application
+            if (!applicationService.hasAccessToApplication(currentUser, application)) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "You do not have access to this application"));
+            }
+            
             return ResponseEntity.ok(application);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
