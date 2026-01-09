@@ -14,14 +14,40 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, hasCheckedAuth } = useSelector(
+  const { loading, error, isAuthenticated, authCheckComplete, currentUser } = useSelector(
     (state) => state.user
   );
 
   useEffect(() => {
-    if (!hasCheckedAuth) return;
-    if (isAuthenticated) {
-      navigate("/");
+    if (!authCheckComplete) return;
+    if (isAuthenticated && currentUser) {
+      const role = currentUser.role?.toUpperCase();
+      switch (role) {
+        case "ADMIN":
+        case "SUPER_ADMIN":
+          navigate("/admin/dashboard");
+          break;
+        case "RECRUITER":
+          navigate("/recruiter/dashboard");
+          break;
+        case "HR":
+          navigate("/hr/dashboard");
+          break;
+        case "INTERVIEWER":
+          navigate("/interviewer/dashboard");
+          break;
+        case "REVIEWER":
+          navigate("/reviewer/dashboard");
+          break;
+        case "CANDIDATE":
+          navigate("/candidate/dashboard");
+          break;
+        case "VIEWER":
+          navigate("/viewer/dashboard");
+          break;
+        default:
+          navigate("/positions");
+      }
     }
     if (error) {
       setErrorMessage(error);
@@ -29,7 +55,7 @@ const Login = () => {
     return () => {
       dispatch(clearError());
     };
-  }, [isAuthenticated, error, dispatch, hasCheckedAuth]);
+  }, [isAuthenticated, error, dispatch, authCheckComplete, currentUser, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -130,7 +156,7 @@ const Login = () => {
           </form>
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <p className="text-sm text-gray-600">
             Don't have an account?{" "}
             <Link
@@ -138,6 +164,15 @@ const Login = () => {
               className="font-medium text-[var(--primary-color)] hover:underline"
             >
               Sign up
+            </Link>
+          </p>
+          <p className="text-sm text-gray-600">
+            Are you a candidate?{" "}
+            <Link
+              to="/candidate/login"
+              className="font-medium text-[var(--primary-color)] hover:underline"
+            >
+              Candidate Login
             </Link>
           </p>
         </div>

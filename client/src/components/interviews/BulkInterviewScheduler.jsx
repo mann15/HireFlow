@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { scheduleBulkInterviews } from "../../services/interviewService";
+import { getPositions } from "../../services/positionService";
+import SearchableDropdown from "../SearchableDropdown";
 
 const BulkInterviewScheduler = () => {
   const [form, setForm] = useState({
@@ -23,6 +25,24 @@ const BulkInterviewScheduler = () => {
   const [sendInvites, setSendInvites] = useState(true);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [loading, setLoading] = useState(false);
+  const [positions, setPositions] = useState([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+
+  useEffect(() => {
+    fetchPositions();
+  }, []);
+
+  const fetchPositions = async () => {
+    try {
+      setLoadingPositions(true);
+      const data = await getPositions();
+      setPositions(data || []);
+    } catch (err) {
+      console.error("Failed to load positions", err);
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
 
   const resetStatus = () => setStatus({ type: "", message: "" });
 
@@ -139,16 +159,21 @@ const BulkInterviewScheduler = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Position ID (optional)
-            </label>
-            <input
-              type="number"
+            <SearchableDropdown
+              label="Position (optional)"
               value={form.positionId}
-              onChange={(e) => setForm({ ...form, positionId: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              placeholder="123"
+              onChange={(value) => setForm({ ...form, positionId: value })}
+              options={positions.map((pos) => ({
+                value: pos.positionId || pos.id,
+                label: `${pos.jobTitle} (#${pos.positionId || pos.id})`,
+                subtitle: `${pos.department} • ${pos.status || 'OPEN'}`
+              }))}
+              placeholder="Select a position"
+              loading={loadingPositions}
+              noOptionsText="No positions found"
             />
+          </div>
+          
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -170,10 +195,8 @@ const BulkInterviewScheduler = () => {
               type="time"
               value={form.eventTime}
               onChange={(e) => setForm({ ...form, eventTime: e.target.value })}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-            />
+              className="w-full border border-gray-300 rounded-md px-3 py-2"/>
           </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

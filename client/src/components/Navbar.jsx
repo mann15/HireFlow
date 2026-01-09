@@ -19,6 +19,12 @@ const Navbar = () => {
       const formattedName =
         currentUser.name.charAt(0).toUpperCase() + currentUser.name.slice(1);
       setUserName(formattedName);
+    } else if (currentUser?.firstName) {
+      setUserName(
+        `${currentUser.firstName} ${currentUser.lastName || ""}`.trim()
+      );
+    } else if (currentUser?.email) {
+      setUserName(currentUser.email.split("@")[0]);
     } else {
       setUserName("User");
     }
@@ -37,8 +43,8 @@ const Navbar = () => {
           { name: "Dashboard", path: "/admin/dashboard" },
           { name: "Positions", path: "/positions" },
           { name: "Candidates", path: "/candidates" },
-          { name: "Users", path: "/users" },
-          { name: "Analytics", path: "/analytics" },
+          { name: "Users", path: "/admin/users" },
+          { name: "Reports", path: "/reports" },
         ];
 
       case "RECRUITER":
@@ -54,14 +60,16 @@ const Navbar = () => {
           { name: "Dashboard", path: "/hr/dashboard" },
           { name: "Positions", path: "/positions" },
           { name: "Candidates", path: "/candidates" },
-          { name: "Interviews", path: "/interviews" },
+          { name: "Interviews", path: "/interviews/manage" },
+          { name: "Documents", path: "/documents/verify" },
           { name: "Offers", path: "/offers" },
+          { name: "Reports", path: "/reports" },
         ];
 
       case "INTERVIEWER":
         return [
           { name: "Dashboard", path: "/interviewer/dashboard" },
-          { name: "Interviews", path: "/interviews" },
+          { name: "Interviews", path: "/interviews/my" },
           { name: "Candidates", path: "/candidates" },
         ];
 
@@ -79,6 +87,12 @@ const Navbar = () => {
           { name: "Candidates", path: "/candidates" },
         ];
 
+      case "CANDIDATE":
+        return [
+          { name: "Dashboard", path: "/candidate/dashboard" },
+          { name: "Positions", path: "/positions" },
+        ];
+
       default:
         return [
           { name: "Positions", path: "/positions" },
@@ -90,7 +104,7 @@ const Navbar = () => {
   const navigationItems = getNavigationItems();
 
   return (
-    <nav className="fixed top-0 w-screen bg-[var(--background-color-light)] text-[var(--secondary-color)] shadow-md h-20 overflow-hidden z-50">
+    <nav className="fixed top-0 w-screen bg-[var(--primary-50)] text-[var(--secondary-color)] shadow-md h-20 overflow-hidden z-50">
       <div className="container mx-auto flex justify-between items-center h-full">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-2/5 overflow-hidden rounded-lg flex items-center justify-center">
@@ -128,7 +142,13 @@ const Navbar = () => {
               <div className="flex items-center mr-4">
                 <span className="font-medium">Hi, {userName}</span>
                 {currentUser?.role && (
-                  <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  <span
+                    className="ml-2 px-2 py-1 text-xs rounded-full"
+                    style={{
+                      backgroundColor: "var(--primary-50)",
+                      color: "var(--primary-700)",
+                    }}
+                  >
                     {currentUser.role}
                   </span>
                 )}

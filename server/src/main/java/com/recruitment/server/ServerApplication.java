@@ -31,6 +31,12 @@ public class ServerApplication {
 		if (dotenv.get("GEMINI_API_KEY") != null)
 			System.setProperty("GEMINI_API_KEY", dotenv.get("GEMINI_API_KEY"));
 
+		// Email configuration
+		if (dotenv.get("EMAIL_USERNAME") != null)
+			System.setProperty("EMAIL_USERNAME", dotenv.get("EMAIL_USERNAME"));
+		if (dotenv.get("EMAIL_PASSWORD") != null)
+			System.setProperty("EMAIL_PASSWORD", dotenv.get("EMAIL_PASSWORD"));
+
 		SpringApplication.run(ServerApplication.class, args);
 	}
 

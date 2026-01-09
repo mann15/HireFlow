@@ -2,21 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --primary-color: #02bfd3;
-    --primary-color-dark: #02abbe;
-    --secondary-color: #131932;
-    --background-color: #81b449;
-    --background-color-light: #edecec;
-  }
-}
+:root {
+  /* Main color variables */
+  --primary-color: #0ea5e9;
+  --secondary-color: #000000;
+  --accent-color: #22c55e;
 
-@layer utilities {
-  .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-  }
+  /* Primary color scale */
+  --primary-50: #f0f9fc;
+  --primary-100: #e0f2f9;
+  --primary-200: #bae6f3;
+  --primary-300: #7dd3ed;
+  --primary-400: #38bdf8;
+  --primary-500: #0ea5e9;
+  --primary-600: #0284c7;
+  --primary-700: #0369a1;
+  --primary-800: #075985;
+  --primary-900: #0c3d66;
+  --primary-950: #051e35;
+
+  --secondary-50: #f5f3ff;
+  --secondary-100: #ede9fe;
+  --secondary-200: #ddd6fe;
+  --secondary-300: #c4b5fd;
+  --secondary-400: #a78bfa;
+  --secondary-500: #8b5cf6;
+  --secondary-600: #7c3aed;
+  --secondary-700: #6d28d9;
+  --secondary-800: #5b21b6;
+  --secondary-900: #4c1d95;
+  --secondary-950: #2e1065;
+
+  --accent-50: #f0fdf4;
+  --accent-100: #dcfce7;
+  --accent-200: #bbf7d0;
+  --accent-300: #86efac;
+  --accent-400: #4ade80;
+  --accent-500: #22c55e;
+  --accent-600: #16a34a;
+  --accent-700: #15803d;
+  --accent-800: #166534;
+  --accent-900: #145231;
+  --accent-950: #052e16;
 }

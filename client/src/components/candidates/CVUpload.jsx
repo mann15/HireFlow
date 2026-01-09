@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { candidateService } from "../../services/candidateService";
+import SearchableDropdown from "../SearchableDropdown";
 
 const CVUpload = ({ candidateId, onUploadComplete }) => {
   const [file, setFile] = useState(null);
@@ -50,11 +51,6 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
       return;
     }
 
-    if (!positionId) {
-      setError("Please select a position");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -62,10 +58,17 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
     try {
       let result;
       if (candidateId) {
-        result = await candidateService.uploadCV(candidateId, positionId, file);
+        result = await candidateService.uploadCV(
+          candidateId,
+          positionId || null,
+          file
+        );
       } else {
         // create candidate from CV
-        result = await candidateService.createCandidateFromCV(positionId, file);
+        result = await candidateService.createCandidateFromCV(
+          positionId || null,
+          file
+        );
       }
 
       // result may contain { cv, candidate }
@@ -135,23 +138,22 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Position (optional)
-          </label>
-          <select
-            value={positionId}
-            onChange={(e) => setPositionId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">No position (create candidate only)</option>
-            {positions.map((p) => (
-              <option key={p.positionId} value={p.positionId}>
-                {p.jobTitle} {p.positionId ? `(#${p.positionId})` : ""}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SearchableDropdown
+          label="Position (optional)"
+          value={positionId}
+          onChange={setPositionId}
+          options={[
+            { value: "", label: "No position (create candidate only)" },
+            ...positions.map((p) => ({
+              value: p.positionId || p.id,
+              label: `${p.jobTitle} (#${p.positionId || p.id})`,
+              subtitle: `${p.department} • ${p.status || 'OPEN'}`
+            }))
+          ]}
+          placeholder="Select a position"
+          loading={loading && positions.length === 0}
+          noOptionsText="No positions available"
+        />
 
         {file && (
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3">

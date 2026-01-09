@@ -5,9 +5,13 @@ import Loader from "./Loader";
 // Basic route guard that checks authentication and optional role allowlist.
 const ProtectedRoute = ({ allowedRoles = [], children }) => {
   const location = useLocation();
-  const { isAuthenticated, currentUser, globalLoading } = useSelector(
-    (state) => state.user
-  );
+  const { isAuthenticated, currentUser, globalLoading, authCheckComplete } =
+    useSelector((state) => state.user);
+
+  // While auth check is in progress, show loader instead of redirecting
+  if (!authCheckComplete) {
+    return <Loader />;
+  }
 
   if (globalLoading) return <Loader />;
 
