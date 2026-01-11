@@ -35,7 +35,7 @@ public class ScreeningController {
     @GetMapping("/feedback/application/{applicationId}/latest")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER','INTERVIEWER','VIEWER')")
     public ResponseEntity<ScreeningFeedbackDTO> getLatestFeedback(@PathVariable Long applicationId) {
-        ScreeningFeedbackDTO feedback = screeningService.getLatestFeedbackByApplicationId(applicationId);
+        ScreeningFeedbackDTO feedback = screeningService.getLatestFeedbackByApplicationIdSingle(applicationId);
         if (feedback == null) {
             return ResponseEntity.notFound().build();
         }

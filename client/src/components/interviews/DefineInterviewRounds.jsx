@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { defineInterviewRounds } from "../../services/interviewService";
+import { getApplicationsByPosition } from "../../services/applicationService";
+import SearchableDropdown from "../SearchableDropdown";
 import {
   getErrorMessage,
   showError,
@@ -19,6 +21,8 @@ const DefineInterviewRounds = ({ positionId, onComplete }) => {
   ]);
   const [scope, setScope] = useState("POSITION_DEFAULT");
   const [candidateId, setCandidateId] = useState("");
+  const [candidates, setCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -72,6 +76,46 @@ const DefineInterviewRounds = ({ positionId, onComplete }) => {
     ],
   };
 
+  // Fetch candidates for the position
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      if (positionId && scope === "CANDIDATE_SPECIFIC") {
+        setLoadingCandidates(true);
+        try {
+          const applications = await getApplicationsByPosition(positionId);
+          const candidateOptions = applications
+            .filter((app) => app.candidate)
+            .map((app) => {
+              const c = app.candidate;
+              const first = c.user?.firstName || c.firstName || "";
+              const last = c.user?.lastName || c.lastName || "";
+              const email = c.user?.email || c.email || "";
+              const name = `${first} ${last}`.trim() || "Unknown";
+              return {
+                value: c.candidateId,
+                label: email ? `${name} (${email})` : name,
+              };
+            });
+          setCandidates(candidateOptions);
+        } catch (err) {
+          console.error("Failed to fetch candidates:", err);
+          showError("Failed to load candidates for this position");
+        } finally {
+          setLoadingCandidates(false);
+        }
+      }
+    };
+
+    fetchCandidates();
+  }, [positionId, scope]);
+
+  // Reset candidate selection when switching back to position default
+  useEffect(() => {
+    if (scope === "POSITION_DEFAULT") {
+      setCandidateId("");
+    }
+  }, [scope]);
+
   const addRound = () => {
     setRounds([
       ...rounds,
@@ -117,7 +161,9 @@ const DefineInterviewRounds = ({ positionId, onComplete }) => {
       await defineInterviewRounds(
         positionId,
         rounds,
-        scope === "CANDIDATE_SPECIFIC" ? candidateId : undefined
+        scope === "CANDIDATE_SPECIFIC" && candidateId
+          ? Number(candidateId)
+          : undefined
       );
       setSuccess(
         scope === "CANDIDATE_SPECIFIC"
@@ -181,15 +227,17 @@ const DefineInterviewRounds = ({ positionId, onComplete }) => {
         </div>
 
         {scope === "CANDIDATE_SPECIFIC" && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-700">Candidate ID</label>
-            <input
-              type="number"
-              min="1"
+          <div className="flex-1">
+            <SearchableDropdown
+              options={candidates}
               value={candidateId}
-              onChange={(e) => setCandidateId(e.target.value)}
-              className="w-40 border border-gray-300 rounded-md px-3 py-2"
-              placeholder="e.g., 1024"
+              onChange={(value) => setCandidateId(value)}
+              label="Select Candidate"
+              placeholder="Choose a candidate..."
+              loading={loadingCandidates}
+              noOptionsText="No candidates found for this position"
+              required
+              className="w-full"
             />
           </div>
         )}

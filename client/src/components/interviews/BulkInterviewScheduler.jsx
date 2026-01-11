@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { scheduleBulkInterviews } from "../../services/interviewService";
 import { getPositions } from "../../services/positionService";
+import { getApplicationsByPosition } from "../../services/applicationService";
+import { userService } from "../../services/apiService";
 import SearchableDropdown from "../SearchableDropdown";
 
-const BulkInterviewScheduler = () => {
+const BulkInterviewScheduler = ({ selectedPositionId = "" }) => {
   const [form, setForm] = useState({
     eventName: "",
     eventType: "WALK_IN",
@@ -12,8 +14,8 @@ const BulkInterviewScheduler = () => {
     eventTime: "",
     mode: "IN_PERSON",
     location: "",
-    candidateIds: "",
-    panelistIds: "",
+    candidateIds: [],
+    panelistIds: [],
     notes: "",
   });
   const [onlineTest, setOnlineTest] = useState({
@@ -27,10 +29,23 @@ const BulkInterviewScheduler = () => {
   const [loading, setLoading] = useState(false);
   const [positions, setPositions] = useState([]);
   const [loadingPositions, setLoadingPositions] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [panelists, setPanelists] = useState([]);
+  const [loadingPanelists, setLoadingPanelists] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [panelistSearch, setPanelistSearch] = useState("");
 
   useEffect(() => {
     fetchPositions();
   }, []);
+
+  // Respect a pre-selected position from parent
+  useEffect(() => {
+    if (selectedPositionId) {
+      setForm((prev) => ({ ...prev, positionId: selectedPositionId }));
+    }
+  }, [selectedPositionId]);
 
   const fetchPositions = async () => {
     try {
@@ -44,14 +59,93 @@ const BulkInterviewScheduler = () => {
     }
   };
 
+  const fetchCandidates = async (positionId) => {
+    if (!positionId) {
+      setCandidates([]);
+      return;
+    }
+    setLoadingCandidates(true);
+    try {
+      const apps = await getApplicationsByPosition(positionId);
+      const mapped = (apps || [])
+        .filter((app) => app.candidate)
+        .map((app) => {
+          const c = app.candidate;
+          const u = c.user || {};
+          const name = `${u.firstName || c.firstName || ""} ${
+            u.lastName || c.lastName || ""
+          }`.trim();
+          const email = u.email || c.email || "";
+          return {
+            id: c.candidateId,
+            label: name || email || `Candidate ${c.candidateId}`,
+            subtitle: email || app.status || "",
+          };
+        });
+      setCandidates(mapped);
+    } catch (err) {
+      console.error("Failed to load candidates", err);
+      setCandidates([]);
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  const fetchPanelists = async () => {
+    setLoadingPanelists(true);
+    try {
+      const users = await userService.getUsers();
+      const eligible = (users || []).filter((u) =>
+        [
+          "INTERVIEWER",
+          "REVIEWER",
+          "HR",
+          "RECRUITER",
+          "ADMIN",
+          "SUPER_ADMIN",
+        ].includes(u.role?.roleName)
+      );
+      setPanelists(eligible);
+    } catch (err) {
+      console.error("Failed to load panelists", err);
+      setPanelists([]);
+    } finally {
+      setLoadingPanelists(false);
+    }
+  };
+
+  // Load candidates and panelists when a position is chosen
+  useEffect(() => {
+    if (form.positionId) {
+      fetchCandidates(form.positionId);
+    } else {
+      setCandidates([]);
+      setForm((prev) => ({ ...prev, candidateIds: [] }));
+    }
+    fetchPanelists();
+  }, [form.positionId]);
+
   const resetStatus = () => setStatus({ type: "", message: "" });
 
-  const parseIds = (value) =>
-    value
-      .split(/[,\n]/)
-      .map((v) => parseInt(v.trim(), 10))
-      .filter((v) => !Number.isNaN(v) && v > 0);
+  const toggleCandidate = (id) => {
+    setForm((prev) => {
+      const exists = prev.candidateIds.includes(id);
+      const nextIds = exists
+        ? prev.candidateIds.filter((cId) => cId !== id)
+        : [...prev.candidateIds, id];
+      return { ...prev, candidateIds: nextIds };
+    });
+  };
 
+  const togglePanelist = (id) => {
+    setForm((prev) => {
+      const exists = prev.panelistIds.includes(id);
+      const nextIds = exists
+        ? prev.panelistIds.filter((pId) => pId !== id)
+        : [...prev.panelistIds, id];
+      return { ...prev, panelistIds: nextIds };
+    });
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     resetStatus();
@@ -66,8 +160,8 @@ const BulkInterviewScheduler = () => {
         schedule,
         mode: form.mode,
         location: form.mode === "IN_PERSON" ? form.location : null,
-        candidateIds: parseIds(form.candidateIds),
-        panelistIds: parseIds(form.panelistIds),
+        candidateIds: form.candidateIds,
+        panelistIds: form.panelistIds,
         notes: form.notes,
         trackAsEvent: true,
         sendInvites,
@@ -229,33 +323,145 @@ const BulkInterviewScheduler = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Candidate IDs (comma or newline separated)
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Candidates for this position
             </label>
-            <textarea
-              value={form.candidateIds}
-              onChange={(e) =>
-                setForm({ ...form, candidateIds: e.target.value })
-              }
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              rows={3}
-              placeholder="101,102,103"
+            <input
+              type="text"
+              value={candidateSearch}
+              onChange={(e) => setCandidateSearch(e.target.value)}
+              placeholder="Search candidates by name/email"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
+            <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto p-2">
+              {loadingCandidates ? (
+                <p className="text-sm text-gray-500">Loading candidates...</p>
+              ) : candidates.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  {form.positionId
+                    ? "No candidates for this position"
+                    : "Select a position to load candidates"}
+                </p>
+              ) : (
+                (() => {
+                  const filtered = candidates.filter((c) =>
+                    `${c.label} ${c.subtitle}`
+                      .toLowerCase()
+                      .includes(candidateSearch.toLowerCase())
+                  );
+                  const allFilteredIds = filtered.map((c) => c.id);
+                  const allSelected =
+                    filtered.length > 0 &&
+                    allFilteredIds.every((id) =>
+                      form.candidateIds.includes(id)
+                    );
+
+                  return (
+                    <div className="space-y-1">
+                      <label className="flex items-center gap-2 py-1 text-sm font-medium text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setForm((prev) => ({
+                                ...prev,
+                                candidateIds: Array.from(
+                                  new Set([
+                                    ...prev.candidateIds,
+                                    ...allFilteredIds,
+                                  ])
+                                ),
+                              }));
+                            } else {
+                              setForm((prev) => ({
+                                ...prev,
+                                candidateIds: prev.candidateIds.filter(
+                                  (id) => !allFilteredIds.includes(id)
+                                ),
+                              }));
+                            }
+                          }}
+                        />
+                        Select all shown
+                      </label>
+
+                      {filtered.map((c) => (
+                        <label
+                          key={c.id}
+                          className="flex items-center gap-2 py-1 text-sm text-gray-700"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.candidateIds.includes(c.id)}
+                            onChange={() => toggleCandidate(c.id)}
+                          />
+                          <span className="font-medium">{c.label}</span>
+                          {c.subtitle && (
+                            <span className="text-xs text-gray-500">
+                              {c.subtitle}
+                            </span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Panelist User IDs (comma or newline separated)
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Panelists
             </label>
-            <textarea
-              value={form.panelistIds}
-              onChange={(e) =>
-                setForm({ ...form, panelistIds: e.target.value })
-              }
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-              rows={3}
-              placeholder="201,202"
+            <input
+              type="text"
+              value={panelistSearch}
+              onChange={(e) => setPanelistSearch(e.target.value)}
+              placeholder="Search panelists by name"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
             />
+            <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto p-2">
+              {loadingPanelists ? (
+                <p className="text-sm text-gray-500">Loading panelists...</p>
+              ) : panelists.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No interviewers available
+                </p>
+              ) : (
+                panelists
+                  .filter((p) =>
+                    `${p.firstName} ${p.lastName} ${p.role?.roleName}`
+                      .toLowerCase()
+                      .includes(panelistSearch.toLowerCase())
+                  )
+                  .map((p) => (
+                    <label
+                      key={p.userId}
+                      className="flex items-center gap-2 py-1 text-sm text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={form.panelistIds.includes(p.userId)}
+                        onChange={() => togglePanelist(p.userId)}
+                      />
+                      <span className="font-medium">
+                        {p.firstName} {p.lastName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({p.role?.roleName || ""})
+                      </span>
+                    </label>
+                  ))
+              )}
+            </div>
+            {form.panelistIds.length > 1 && (
+              <p className="text-xs text-gray-500">
+                Panel interview: multiple interviewers will be invited.
+              </p>
+            )}
           </div>
         </div>
 

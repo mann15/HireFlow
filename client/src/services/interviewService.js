@@ -20,6 +20,12 @@ export const getInterviewRounds = async (positionId) => {
   return response.data;
 };
 
+// Delete interview round
+export const deleteInterviewRound = async (roundId) => {
+  const response = await api.delete(`${BASE}/rounds/${roundId}`);
+  return response.data;
+};
+
 // Schedule single interview
 export const scheduleInterview = async (scheduleData) => {
   const response = await api.post(`${BASE}/schedule`, scheduleData);
@@ -34,6 +40,9 @@ export const scheduleBulkInterviews = async (bulkData) => {
 
 // Reschedule interview
 export const rescheduleInterview = async (interviewId, newDate) => {
+  if (!interviewId || interviewId === "undefined" || interviewId === "null") {
+    throw new Error("Invalid interview ID for reschedule");
+  }
   const response = await api.put(`${BASE}/${interviewId}/reschedule`, null, {
     params: { newDate },
   });
@@ -42,12 +51,18 @@ export const rescheduleInterview = async (interviewId, newDate) => {
 
 // Cancel interview
 export const cancelInterview = async (interviewId) => {
+  if (!interviewId || interviewId === "undefined" || interviewId === "null") {
+    throw new Error("Invalid interview ID for cancel");
+  }
   const response = await api.put(`${BASE}/${interviewId}/cancel`);
   return response.data;
 };
 
 // Submit interview feedback
 export const submitFeedback = async (interviewId, feedbackData) => {
+  if (!interviewId || interviewId === "undefined" || interviewId === "null") {
+    throw new Error("Invalid interview ID for feedback");
+  }
   const response = await api.post(
     `${BASE}/${interviewId}/feedback`,
     feedbackData
@@ -58,7 +73,11 @@ export const submitFeedback = async (interviewId, feedbackData) => {
 // Get interviews by application
 export const getInterviewsByApplication = async (applicationId) => {
   // Validate applicationId
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
   const response = await api.get(`${BASE}/application/${applicationId}`);
@@ -73,6 +92,9 @@ export const getMyInterviews = async () => {
 
 // Get interview by ID
 export const getInterviewById = async (interviewId) => {
+  if (!interviewId || interviewId === "undefined" || interviewId === "null") {
+    throw new Error("Invalid interview ID");
+  }
   const response = await api.get(`${BASE}/${interviewId}`);
   return response.data;
 };

@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 const ApplicationsTable = ({ positionId = null }) => {
   const dispatch = useDispatch();
   const { applications, loading } = useSelector((state) => state.application);
+  const { currentUser } = useSelector((state) => state.user);
   const [filter, setFilter] = useState("ALL");
 
   useEffect(() => {
@@ -32,6 +33,23 @@ const ApplicationsTable = ({ positionId = null }) => {
     return <div className="text-center py-8">Loading applications...</div>;
   }
 
+  // Check if user is a reviewer
+  const userRole =
+    currentUser?.role?.roleName || currentUser?.roleName || currentUser?.role;
+  const isReviewer = userRole === "REVIEWER";
+  const currentUserId =
+    currentUser?.userId || currentUser?.id || currentUser?.user?.id;
+
+  // Filter applications for reviewers - show only assigned ones
+  const filteredApplications = isReviewer
+    ? applications.filter(
+        (app) =>
+          app.reviewerAssigned === true ||
+          app.reviewerId === currentUserId ||
+          app.assignedReviewerId === currentUserId
+      )
+    : applications;
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-4 border-b flex justify-between items-center">
@@ -54,9 +72,11 @@ const ApplicationsTable = ({ positionId = null }) => {
         </div>
       </div>
 
-      {applications.length === 0 ? (
+      {filteredApplications.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          No applications found
+          {isReviewer
+            ? "No applications assigned to you"
+            : "No applications found"}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -84,7 +104,7 @@ const ApplicationsTable = ({ positionId = null }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {applications.map((app, index) => (
+              {filteredApplications.map((app, index) => (
                 <tr
                   key={
                     app.id ||
@@ -121,12 +141,21 @@ const ApplicationsTable = ({ positionId = null }) => {
                       : "N/A"}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      to={`/applications/${app.applicationId}`}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      View Details
-                    </Link>
+                    {isReviewer ? (
+                      <Link
+                        to={`/review/application/${app.applicationId}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Review CV
+                      </Link>
+                    ) : (
+                      <Link
+                        to={`/applications/${app.applicationId}`}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        View Details
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

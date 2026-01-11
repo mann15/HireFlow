@@ -319,7 +319,7 @@ const ReportsDashboard = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 mt-20 min-h-screen">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <FiBarChart2 className="text-blue-500" /> Reports & Analytics

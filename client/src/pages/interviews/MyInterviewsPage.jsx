@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getMyInterviews } from "../../services/interviewService";
-import { useEffect } from "react";
+import { feedbackService } from "../../services/apiService";
+import { useSelector } from "react-redux";
 import InterviewFeedback from "../../components/interviews/InterviewFeedback";
 import { format } from "date-fns";
 
@@ -9,6 +10,7 @@ const MyInterviewsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const currentUserId = useSelector((state) => state.user?.currentUser?.userId);
 
   useEffect(() => {
     fetchMyInterviews();
@@ -18,7 +20,25 @@ const MyInterviewsPage = () => {
     setLoading(true);
     try {
       const data = await getMyInterviews();
-      setInterviews(data);
+      // Fetch feedback for each interview; attach myFeedback if present
+      const withFeedback = await Promise.all(
+        (data || []).map(async (interview) => {
+          const id = interview.interviewId || interview.id;
+          try {
+            const feedbacks = await feedbackService.getInterviewFeedback(id);
+            const myFb = Array.isArray(feedbacks)
+              ? feedbacks
+                  .filter((f) => f?.panelist?.userId === currentUserId)
+                  .sort((a, b) => (a.id || 0) - (b.id || 0))
+                  .slice(-1)[0] || null
+              : null;
+            return { ...interview, myFeedback: myFb, allFeedback: feedbacks };
+          } catch (e) {
+            return { ...interview, myFeedback: null, allFeedback: [] };
+          }
+        })
+      );
+      setInterviews(withFeedback);
     } catch (err) {
       console.error("Failed to fetch interviews:", err);
       setInterviews([]);
@@ -57,16 +77,16 @@ const MyInterviewsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {interviews.map((interview) => (
               <div
-                key={interview.id}
+                key={interview.interviewId || interview.id}
                 className="bg-white rounded-lg shadow hover:shadow-lg transition p-6"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-semibold text-lg">
-                      {interview.roundName}
+                      {interview.round.roundName}
                     </h3>
                     <p className="text-sm text-gray-600">
-                      {interview.roundType}
+                      {interview.round.roundType}
                     </p>
                   </div>
                   <span
@@ -81,11 +101,16 @@ const MyInterviewsPage = () => {
                 <div className="space-y-2 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Candidate</p>
-                    <p className="font-medium">{interview.candidateName}</p>
+                    <p className="font-medium">
+                      {interview.application.candidate.firstName}{" "}
+                      {interview.application.candidate.lastName}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Position</p>
-                    <p className="font-medium">{interview.positionTitle}</p>
+                    <p className="font-medium">
+                      {interview.application.position.jobTitle}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Date & Time</p>
@@ -97,7 +122,7 @@ const MyInterviewsPage = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Mode</p>
-                    <p className="font-medium">{interview.mode}</p>
+                    <p className="font-medium">{interview.interviewMode}</p>
                   </div>
                 </div>
 
@@ -114,10 +139,13 @@ const MyInterviewsPage = () => {
                   </div>
                 )}
 
-                {interview.status === "SCHEDULED" && (
+                {!interview.myFeedback && interview.status !== "CANCELED" && (
                   <button
                     onClick={() => {
-                      setSelectedInterview(interview);
+                      setSelectedInterview({
+                        ...interview,
+                        interviewId: interview.interviewId || interview.id,
+                      });
                       setShowFeedbackModal(true);
                     }}
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -126,9 +154,76 @@ const MyInterviewsPage = () => {
                   </button>
                 )}
 
-                {interview.status === "COMPLETED" && (
-                  <div className="bg-green-50 p-3 rounded text-sm text-green-800">
-                    ✓ Feedback submitted
+                {interview.myFeedback && (
+                  <div className="border border-gray-200 rounded p-3 text-sm space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">Your Feedback</span>
+                      <div className="flex gap-2">
+                        <button
+                          className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
+                          onClick={() => {
+                            setSelectedInterview({
+                              ...interview,
+                              interviewId:
+                                interview.interviewId || interview.id,
+                            });
+                            setShowFeedbackModal(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="px-2 py-1 text-xs border rounded hover:bg-red-50 text-red-700"
+                          onClick={async () => {
+                            try {
+                              const id = interview.interviewId || interview.id;
+                              const fbId = interview.myFeedback?.id;
+                              if (!fbId) return;
+                              await feedbackService.deleteInterviewFeedback(
+                                id,
+                                fbId
+                              );
+                              await fetchMyInterviews();
+                            } catch (e) {
+                              console.error("Failed to delete feedback", e);
+                              alert(
+                                e?.response?.data?.error ||
+                                  "Failed to delete feedback"
+                              );
+                            }
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Recommendation:</span>
+                      <span className="ml-2 font-medium">
+                        {interview.myFeedback.recommendation}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Overall:</span>
+                      <span className="ml-2 font-medium">
+                        {interview.myFeedback.overall_rating}
+                      </span>
+                    </div>
+                    {interview.myFeedback.feedback_comments && (
+                      <div className="text-gray-700">
+                        {interview.myFeedback.feedback_comments}
+                      </div>
+                    )}
+                    {interview.myFeedback.hr_notes && (
+                      <div className="text-gray-700">
+                        <span className="text-gray-600">
+                          HR/Reviewer Notes:
+                        </span>
+                        <span className="ml-2">
+                          {interview.myFeedback.hr_notes}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -141,8 +236,11 @@ const MyInterviewsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <InterviewFeedback
-                interviewId={selectedInterview.id}
+                interviewId={
+                  selectedInterview.interviewId || selectedInterview.id
+                }
                 candidateName={selectedInterview.candidateName}
+                initialData={selectedInterview.myFeedback}
                 onComplete={() => {
                   setShowFeedbackModal(false);
                   setSelectedInterview(null);

@@ -23,7 +23,9 @@ const InterviewerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const interviews = await interviewService.getInterviews().catch(() => []);
+      const interviews = await interviewService
+        .getMyInterviews()
+        .catch(() => []);
 
       const today = new Date().toDateString();
       const todayInterviews = Array.isArray(interviews)
@@ -93,7 +95,6 @@ const InterviewerDashboard = () => {
                   {stats.scheduledInterviews}
                 </p>
               </div>
-              <div className="text-4xl text-blue-200">📅</div>
             </div>
             <Link
               to="/interviews/my"
@@ -111,7 +112,6 @@ const InterviewerDashboard = () => {
                   {stats.pendingFeedback}
                 </p>
               </div>
-              <div className="text-4xl text-orange-200">📝</div>
             </div>
             <Link
               to="/interviews/my"
@@ -129,7 +129,6 @@ const InterviewerDashboard = () => {
                   {stats.completedInterviews}
                 </p>
               </div>
-              <div className="text-4xl text-green-200">✅</div>
             </div>
             <Link
               to="/interviews/my"
@@ -147,7 +146,6 @@ const InterviewerDashboard = () => {
                   {stats.upcomingToday}
                 </p>
               </div>
-              <div className="text-4xl text-purple-200">⏰</div>
             </div>
             <p className="mt-4 text-sm text-gray-500">
               Interviews scheduled today
@@ -191,7 +189,7 @@ const InterviewerDashboard = () => {
         {/* Quick Actions */}
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             <Link
               to="/interviews/my"
               className="p-4 border rounded-lg hover:bg-blue-50 transition"
@@ -205,20 +203,6 @@ const InterviewerDashboard = () => {
             >
               <p className="font-medium">Add Feedback</p>
               <p className="text-sm text-gray-500">Submit interview feedback</p>
-            </Link>
-            <Link
-              to="/candidates"
-              className="p-4 border rounded-lg hover:bg-green-50 transition"
-            >
-              <p className="font-medium">Candidate Pool</p>
-              <p className="text-sm text-gray-500">Browse candidates</p>
-            </Link>
-            <Link
-              to="/interviews/my"
-              className="p-4 border rounded-lg hover:bg-purple-50 transition"
-            >
-              <p className="font-medium">Schedule Interview</p>
-              <p className="text-sm text-gray-500">Book new interview</p>
             </Link>
           </div>
         </div>

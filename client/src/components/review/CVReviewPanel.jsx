@@ -70,6 +70,13 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
       }
 
       // Determine permission: assigned reviewer or privileged role
+      const roleName =
+        currentUser?.role?.roleName ||
+        currentUser?.roleName ||
+        currentUser?.role;
+      const privilegedRoles = ["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"];
+      const hasPrivilegedRole = privilegedRoles.includes(roleName);
+
       try {
         const reviewers = await getPositionReviewers(
           appData.position.positionId
@@ -83,13 +90,12 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
           );
         setIsReviewerAssigned(!!assigned);
       } catch (e) {
-        // If reviewers cannot be fetched, default to not assigned
-        setIsReviewerAssigned(false);
+        // If reviewers cannot be fetched, allow if user has privileged role
+        setIsReviewerAssigned(hasPrivilegedRole);
       }
 
-      const roleName = currentUser?.role?.roleName || currentUser?.roleName;
-      const privilegedRoles = ["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"];
-      setCanSubmitReview(privilegedRoles.includes(roleName));
+      // Allow submission if user has privileged role OR is specifically assigned
+      setCanSubmitReview(hasPrivilegedRole);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -138,9 +144,9 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
   };
 
   const handleSubmitReview = async () => {
-    if (!isReviewerAssigned) {
+    if (!canSubmitReview) {
       showWarning(
-        "You must be assigned as a reviewer for this position to submit feedback."
+        "You do not have permission to submit reviews. Please contact an administrator."
       );
       return;
     }
@@ -219,15 +225,25 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
   return (
     <div className="space-y-6">
       {/* Assignment Notice */}
-      {!isReviewerAssigned && (
+      {!canSubmitReview && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+          <h3 className="text-sm font-medium text-yellow-800">
+            Review Access Restricted
+          </h3>
+          <p className="mt-1 text-sm text-yellow-700">
+            You do not have permission to submit reviews. Only users with
+            REVIEWER, HR, ADMIN, or SUPER_ADMIN roles can submit reviews.
+          </p>
+        </div>
+      )}
+      {!isReviewerAssigned && canSubmitReview && (
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
           <h3 className="text-sm font-medium text-blue-800">
-            Reviewer not assigned
+            Note: Not specifically assigned
           </h3>
           <p className="mt-1 text-sm text-blue-700">
-            You are not assigned as a reviewer for this position. You can still
-            view the CV and candidate info, but submitting review actions is
-            disabled unless a recruiter/admin assigns you.
+            You are not specifically assigned to this position, but you can
+            still submit reviews based on your role.
           </p>
         </div>
       )}
@@ -330,7 +346,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
               experience for each skill.
             </p>
           </div>
-          {skills.length === 0 && isReviewerAssigned && (
+          {skills.length === 0 && canSubmitReview && (
             <button
               onClick={() => setShowAddSkills(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 font-medium text-sm"
@@ -349,7 +365,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
               Add skills from your profile so reviewers can verify them during
               CV review.
             </p>
-            {isReviewerAssigned && (
+            {canSubmitReview && (
               <button
                 onClick={() => setShowAddSkills(true)}
                 className="text-blue-600 hover:text-blue-700 font-medium mt-3"
@@ -372,7 +388,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
                     handleSkillVerification(index, e.target.checked)
                   }
                   className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  disabled={!isReviewerAssigned}
+                  disabled={!canSubmitReview}
                 />
                 <div className="flex-1">
                   <p className="font-medium">{skill.skillName || skill.name}</p>
@@ -395,7 +411,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
                     onChange={(e) =>
                       handleYearsOfExperience(index, e.target.value)
                     }
-                    disabled={!skill.verified || !isReviewerAssigned}
+                    disabled={!skill.verified || !canSubmitReview}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
                     placeholder="0"
                   />
@@ -458,11 +474,9 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
       <div className="flex justify-end gap-3">
         <button
           onClick={handleSubmitReview}
-          disabled={saving}
+          disabled={saving || !canSubmitReview}
           className={`px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium ${
-            saving || !canSubmitReview || !isReviewerAssigned
-              ? "opacity-50 cursor-not-allowed"
-              : ""
+            saving || !canSubmitReview ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
           {saving ? (

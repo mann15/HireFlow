@@ -4,7 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchPositionById } from "../../redux/thunks/positionThunks";
 import { fetchApplications } from "../../redux/thunks/applicationThunks";
 import { getPositionSkills } from "../../services/positionService";
-import { getInterviewRounds } from "../../services/interviewService";
+import {
+  getInterviewRounds,
+  deleteInterviewRound,
+} from "../../services/interviewService";
+import { showSuccess, showError } from "../../utils/toastUtils";
 import MatchingCandidates from "../../components/positions/MatchingCandidates";
 import ReviewerAssignment from "../../components/review/ReviewerAssignment";
 import DefineInterviewRounds from "../../components/interviews/DefineInterviewRounds";
@@ -75,6 +79,22 @@ const PositionDetails = () => {
     } catch (error) {
       console.error("Error fetching interview rounds:", error);
       setInterviewRounds([]);
+    }
+  };
+
+  const handleDeleteRound = async (roundId) => {
+    if (
+      !window.confirm("Are you sure you want to delete this interview round?")
+    ) {
+      return;
+    }
+    try {
+      await deleteInterviewRound(roundId);
+      showSuccess("Interview round deleted successfully");
+      fetchInterviewRounds();
+    } catch (error) {
+      showError("Failed to delete interview round");
+      console.error("Error deleting interview round:", error);
     }
   };
 
@@ -569,7 +589,7 @@ const PositionDetails = () => {
                       className="bg-white border border-gray-200 rounded-lg p-4"
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <div>
+                        <div className="flex-1">
                           <h4 className="text-lg font-semibold">
                             Round {round.roundOrder}: {round.roundName}
                           </h4>
@@ -577,18 +597,49 @@ const PositionDetails = () => {
                             Type: {round.roundType} | Duration:{" "}
                             {round.durationMinutes} minutes
                           </p>
+                          {round.candidate && (
+                            <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
+                              <p className="text-xs font-semibold text-blue-800 mb-1">
+                                Candidate-Specific Round
+                              </p>
+                              <p className="text-sm text-blue-900">
+                                <span className="font-medium">Name:</span>{" "}
+                                {round.candidate.firstName ||
+                                  round.candidate.user?.firstName ||
+                                  ""}{" "}
+                                {round.candidate.lastName ||
+                                  round.candidate.user?.lastName ||
+                                  ""}
+                              </p>
+                              <p className="text-sm text-blue-900">
+                                <span className="font-medium">Email:</span>{" "}
+                                {round.candidate.email ||
+                                  round.candidate.user?.email ||
+                                  "N/A"}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        {round.isMandatory && (
-                          <span
-                            className="px-2 py-1 text-xs rounded"
-                            style={{
-                              backgroundColor: "var(--primary-50)",
-                              color: "var(--primary-700)",
-                            }}
+                        <div className="flex items-start gap-2">
+                          {round.isMandatory && (
+                            <span
+                              className="px-2 py-1 text-xs rounded"
+                              style={{
+                                backgroundColor: "var(--primary-50)",
+                                color: "var(--primary-700)",
+                              }}
+                            >
+                              Mandatory
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handleDeleteRound(round.roundId)}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                            title="Delete round"
                           >
-                            Mandatory
-                          </span>
-                        )}
+                            Delete
+                          </button>
+                        </div>
                       </div>
                       {round.description && (
                         <p className="text-gray-700 mt-2">

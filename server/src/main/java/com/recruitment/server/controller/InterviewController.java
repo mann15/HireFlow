@@ -24,10 +24,22 @@ public class InterviewController {
     @PostMapping("/rounds/define")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> defineInterviewRounds(@RequestParam Long positionId,
+            @RequestParam(required = false) Long candidateId,
             @RequestBody List<InterviewRound> rounds) {
         try {
-            List<InterviewRound> savedRounds = interviewService.defineInterviewRounds(positionId, rounds);
+            List<InterviewRound> savedRounds = interviewService.defineInterviewRounds(positionId, candidateId, rounds);
             return ResponseEntity.ok(savedRounds);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/rounds/{roundId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    public ResponseEntity<?> deleteInterviewRound(@PathVariable Long roundId) {
+        try {
+            interviewService.deleteInterviewRound(roundId);
+            return ResponseEntity.ok(Map.of("message", "Interview round deleted"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -210,6 +222,26 @@ public class InterviewController {
         }
     }
 
+    @PutMapping("/{interviewId}/feedback/{feedbackId}")
+    @PreAuthorize("hasAnyRole('INTERVIEWER','HR','RECRUITER','ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<?> updateFeedback(@PathVariable Long interviewId,
+            @PathVariable Long feedbackId,
+            @RequestBody InterviewFeedback feedback,
+            Authentication authentication) {
+        try {
+            User requester = userRepository.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            String roleName = requester.getRole() != null ? requester.getRole().getRoleName() : "";
+            boolean canAdminEdit = List.of("ADMIN", "SUPER_ADMIN", "HR", "RECRUITER").contains(roleName);
+
+            InterviewFeedback updated = interviewService.updateInterviewFeedback(
+                    interviewId, feedbackId, requester.getUserId(), canAdminEdit, feedback);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @GetMapping("/application/{applicationId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getInterviewsByApplication(@PathVariable Long applicationId) {
@@ -241,6 +273,24 @@ public class InterviewController {
         try {
             List<InterviewFeedback> feedbacks = interviewService.getFeedbacksByInterview(interviewId);
             return ResponseEntity.ok(feedbacks);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{interviewId}/feedback/{feedbackId}")
+    @PreAuthorize("hasAnyRole('INTERVIEWER','HR','RECRUITER','ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<?> deleteFeedback(@PathVariable Long interviewId,
+            @PathVariable Long feedbackId,
+            Authentication authentication) {
+        try {
+            User requester = userRepository.findByEmail(authentication.getName())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            String roleName = requester.getRole() != null ? requester.getRole().getRoleName() : "";
+            boolean canAdminDelete = List.of("ADMIN", "SUPER_ADMIN", "HR", "RECRUITER").contains(roleName);
+
+            interviewService.deleteInterviewFeedback(interviewId, feedbackId, requester.getUserId(), canAdminDelete);
+            return ResponseEntity.ok(Map.of("message", "Feedback deleted"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

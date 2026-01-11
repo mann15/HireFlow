@@ -135,9 +135,9 @@ const SearchableDropdown = ({
                   {searchTerm ? "No results found" : noOptionsText}
                 </div>
               ) : (
-                filteredOptions.map((option) => (
+                filteredOptions.map((option, idx) => (
                   <div
-                    key={option.value}
+                    key={`${option.value ?? option.label ?? "option"}-${idx}`}
                     className={`px-3 py-2 cursor-pointer transition-colors ${
                       option.value == value ? "" : ""
                     }`}

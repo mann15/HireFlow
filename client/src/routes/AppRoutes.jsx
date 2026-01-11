@@ -47,6 +47,10 @@ import DocumentUploadPage from "../pages/documents/DocumentUploadPage";
 import DocumentTypesManagement from "../pages/documents/DocumentTypesManagement";
 import ReviewScreening from "../pages/review/ReviewScreening";
 
+// Reviewer Pages
+import ReviewerApplicationsList from "../pages/review/ReviewerApplicationsList";
+import ReviewerApplicationDetails from "../pages/review/ReviewerApplicationDetails";
+
 // Offers Pages
 import OffersList from "../components/offers/OffersList";
 import OffersPage from "../pages/offers/OffersPage";
@@ -235,6 +239,28 @@ const AppRoutes = () => {
         }
       />
 
+      {/* Review Routes */}
+      <Route
+        path="/review/screening"
+        element={
+          <ProtectedRoute
+            allowedRoles={["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"]}
+          >
+            <ReviewerApplicationsList />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/review/application/:applicationId"
+        element={
+          <ProtectedRoute
+            allowedRoles={["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"]}
+          >
+            <ReviewerApplicationDetails />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Candidates */}
       <Route
         path="/candidates"
@@ -293,7 +319,17 @@ const AppRoutes = () => {
       <Route
         path="/applications/:applicationId"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={[
+              "ADMIN",
+              "SUPER_ADMIN",
+              "HR",
+              "RECRUITER",
+              "INTERVIEWER",
+              "VIEWER",
+              "CANDIDATE",
+            ]}
+          >
             <ApplicationDetailsPage />
           </ProtectedRoute>
         }

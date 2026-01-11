@@ -24,16 +24,24 @@ public class InterviewService {
     private final InterviewSkillAssesmentRepository interviewSkillAssesmentRepository;
     private final UserRepository userRepository;
     private final JobRepository jobRepository;
+    private final CandidateRepository candidateRepository;
     private final NotificationService notificationService;
 
-    public List<InterviewRound> defineInterviewRounds(Long positionId, List<InterviewRound> rounds) {
+    public List<InterviewRound> defineInterviewRounds(Long positionId, Long candidateId, List<InterviewRound> rounds) {
         JobPosition position = jobRepository.findById(positionId)
                 .orElseThrow(() -> new RuntimeException("Position not found"));
+
+        Candidate candidate = null;
+        if (candidateId != null) {
+            candidate = candidateRepository.findById(candidateId)
+                    .orElseThrow(() -> new RuntimeException("Candidate not found"));
+        }
 
         List<InterviewRound> savedRounds = new ArrayList<>();
 
         for (InterviewRound round : rounds) {
             round.setPosition(position);
+            round.setCandidate(candidate);
             savedRounds.add(interviewRoundRepository.save(round));
         }
 
@@ -52,6 +60,13 @@ public class InterviewService {
         round.setDescription(updatedRound.getDescription());
 
         return interviewRoundRepository.save(round);
+    }
+
+    public void deleteInterviewRound(Long roundId) {
+        if (!interviewRoundRepository.existsById(roundId)) {
+            throw new RuntimeException("Interview round not found");
+        }
+        interviewRoundRepository.deleteById(roundId);
     }
 
     public CandidateInterview scheduleInterview(Long applicationId, Long roundId, Map<String, Object> customRound,
@@ -262,6 +277,72 @@ public class InterviewService {
                 .orElseThrow(() -> new RuntimeException("Interview not found"));
 
         return interviewFeedbackRepository.findByInterview(interview);
+    }
+
+    public InterviewFeedback updateInterviewFeedback(Long interviewId, Long feedbackId,
+            Long requesterUserId, boolean canAdminEdit, InterviewFeedback payload) {
+        InterviewFeedback feedback = interviewFeedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+
+        if (feedback.getInterview() == null || feedback.getInterview().getInterviewId() == null
+                || !feedback.getInterview().getInterviewId().equals(interviewId)) {
+            throw new RuntimeException("Feedback does not belong to the specified interview");
+        }
+
+        Long ownerId = feedback.getPanelist() != null ? feedback.getPanelist().getUserId() : null;
+        if (ownerId == null) {
+            throw new RuntimeException("Feedback has no panelist owner");
+        }
+
+        if (!ownerId.equals(requesterUserId) && !canAdminEdit) {
+            throw new RuntimeException("Not authorized to edit this feedback");
+        }
+
+        // Update editable fields
+        feedback.setFeedback_comments(payload.getFeedback_comments());
+        feedback.setOverall_rating(payload.getOverall_rating());
+        feedback.setCommunication_skills(payload.getCommunication_skills());
+        feedback.setTechnical_knowledge(payload.getTechnical_knowledge());
+        feedback.setCultural_fit_rating(payload.getCultural_fit_rating());
+        feedback.setRecommendation(payload.getRecommendation());
+        feedback.setStrengths(payload.getStrengths());
+        feedback.setAreas_of_improvement(payload.getAreas_of_improvement());
+        feedback.setStage(payload.getStage());
+        feedback.setHr_notes(payload.getHr_notes());
+
+        return interviewFeedbackRepository.save(feedback);
+    }
+
+    public void deleteInterviewFeedback(Long interviewId, Long feedbackId, Long requesterUserId,
+            boolean canAdminDelete) {
+        InterviewFeedback feedback = interviewFeedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new RuntimeException("Feedback not found"));
+
+        if (feedback.getInterview() == null || feedback.getInterview().getInterviewId() == null
+                || !feedback.getInterview().getInterviewId().equals(interviewId)) {
+            throw new RuntimeException("Feedback does not belong to the specified interview");
+        }
+
+        Long ownerId = feedback.getPanelist() != null ? feedback.getPanelist().getUserId() : null;
+        if (ownerId == null) {
+            throw new RuntimeException("Feedback has no panelist owner");
+        }
+
+        if (!ownerId.equals(requesterUserId) && !canAdminDelete) {
+            throw new RuntimeException("Not authorized to delete this feedback");
+        }
+
+        interviewFeedbackRepository.deleteById(feedbackId);
+
+        // Recompute completion status after deletion
+        CandidateInterview interview = feedback.getInterview();
+        List<InterviewPanel> panels = interviewPanelRepository.findByInterview(interview);
+        List<InterviewFeedback> feedbacks = interviewFeedbackRepository.findByInterview(interview);
+        if (panels.size() != feedbacks.size()) {
+            interview.setStatus(CandidateInterview.InterviewStatus.SCHEDULED);
+            interview.setCompletedAt(null);
+            candidateInterviewRepository.save(interview);
+        }
     }
 
     public List<InterviewRound> getRoundsByPosition(Long positionId) {

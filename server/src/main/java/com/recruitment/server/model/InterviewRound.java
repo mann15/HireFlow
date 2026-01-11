@@ -1,8 +1,8 @@
 package com.recruitment.server.model;
 
-
 import lombok.*;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "interview_rounds")
@@ -19,6 +19,11 @@ public class InterviewRound {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "position_id", nullable = false)
     private JobPosition position;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "candidate_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    private Candidate candidate;
 
     @Column(nullable = false)
     private String roundName;

@@ -60,4 +60,17 @@ public class InterviewFeedback {
     @Column(nullable = false)
     private String areas_of_improvement;
 
+    public enum Stage {
+        PANELIST,
+        HR,
+        REVIEWER
+    }
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    private Stage stage = Stage.PANELIST;
+
+    @Column(length = 2000)
+    private String hr_notes;
+
 }

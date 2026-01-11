@@ -79,7 +79,6 @@ const ReviewerDashboard = () => {
                   {stats.pendingScreenings}
                 </p>
               </div>
-              <div className="text-4xl text-blue-200">🔍</div>
             </div>
             <Link
               to="/review/screening"
@@ -97,7 +96,6 @@ const ReviewerDashboard = () => {
                   {stats.assignedApplications}
                 </p>
               </div>
-              <div className="text-4xl text-green-200">📝</div>
             </div>
             <Link
               to="/applications"
@@ -115,7 +113,6 @@ const ReviewerDashboard = () => {
                   {stats.assignedPositions}
                 </p>
               </div>
-              <div className="text-4xl text-purple-200">💼</div>
             </div>
             <Link
               to="/positions"
@@ -133,7 +130,6 @@ const ReviewerDashboard = () => {
                   {stats.completedReviews}
                 </p>
               </div>
-              <div className="text-4xl text-orange-200">✅</div>
             </div>
             <Link
               to="/applications"

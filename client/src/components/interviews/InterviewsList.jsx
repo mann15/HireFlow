@@ -8,13 +8,21 @@ const InterviewsList = ({ applicationId }) => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (applicationId && applicationId !== "undefined" && applicationId !== "null") {
+    if (
+      applicationId &&
+      applicationId !== "undefined" &&
+      applicationId !== "null"
+    ) {
       fetchInterviews();
     }
   }, [applicationId]);
 
   const fetchInterviews = async () => {
-    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    if (
+      !applicationId ||
+      applicationId === "undefined" ||
+      applicationId === "null"
+    ) {
       return;
     }
     setLoading(true);
@@ -72,12 +80,23 @@ const InterviewsList = ({ applicationId }) => {
           className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
         >
           <div className="flex justify-between items-start mb-3">
-            <div>
-              {/* <pre>{JSON.stringify(interview, null, 2)}</pre> */}
+            <div className="flex-1">
               <h4 className="font-semibold text-lg">
                 {interview.round.roundName}
+                {interview.round.candidate && (
+                  <span className="ml-2 text-sm font-normal text-blue-600">
+                    (Candidate-Specific for: {interview.round.candidate.name})
+                  </span>
+                )}
               </h4>
-              <p className="text-sm text-gray-600">{interview.round.roundType}</p>
+              <p className="text-sm text-gray-600">
+                {interview.round.roundType}
+              </p>
+              {interview.round.candidate && (
+                <p className="text-xs text-blue-600 mt-1">
+                  📧 {interview.round.candidate.email}
+                </p>
+              )}
             </div>
             {getStatusBadge(interview.status)}
           </div>

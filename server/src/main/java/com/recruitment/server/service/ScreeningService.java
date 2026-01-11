@@ -157,7 +157,60 @@ public class ScreeningService {
     }
 
     @Transactional(readOnly = true)
-    public ScreeningFeedbackDTO getLatestFeedbackByApplicationId(Long applicationId) {
+    public List<ScreeningFeedbackDTO> getLatestFeedbackByApplicationId(Long applicationId) {
+        return screeningFeedbackRepository.findTopByApplicationApplicationIdOrderByReviewedAtDesc(applicationId)
+                .map(this::mapToDTO)
+                .map(dto -> List.of(dto))
+                .orElse(List.of());
+    }
+
+    /**
+     * Get all screening feedback records
+     */
+    @Transactional(readOnly = true)
+    public List<ScreeningFeedbackDTO> getAllFeedback() {
+        List<ScreeningFeedback> feedbacks = screeningFeedbackRepository.findAll();
+        return feedbacks.stream().map(this::mapToDTO).collect(Collectors.toList());
+    }
+
+    /**
+     * Get a specific feedback by ID
+     */
+    @Transactional(readOnly = true)
+    public ScreeningFeedbackDTO getFeedbackById(Long feedbackId) {
+        return screeningFeedbackRepository.findById(feedbackId)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with id: " + feedbackId));
+    }
+
+    /**
+     * Update screening feedback
+     */
+    @Transactional
+    public ScreeningFeedbackDTO updateScreeningFeedback(Long feedbackId, ScreeningFeedbackDTO feedbackDTO) {
+        ScreeningFeedback feedback = screeningFeedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with id: " + feedbackId));
+
+        feedback.setComments(feedbackDTO.getComments());
+        feedback.setScore(feedbackDTO.getScore());
+        feedback.setRecommendation(feedbackDTO.getRecommendation());
+
+        ScreeningFeedback updatedFeedback = screeningFeedbackRepository.save(feedback);
+        return mapToDTO(updatedFeedback);
+    }
+
+    /**
+     * Delete screening feedback
+     */
+    @Transactional
+    public void deleteScreeningFeedback(Long feedbackId) {
+        ScreeningFeedback feedback = screeningFeedbackRepository.findById(feedbackId)
+                .orElseThrow(() -> new RuntimeException("Feedback not found with id: " + feedbackId));
+        screeningFeedbackRepository.delete(feedback);
+    }
+
+    @Transactional(readOnly = true)
+    public ScreeningFeedbackDTO getLatestFeedbackByApplicationIdSingle(Long applicationId) {
         return screeningFeedbackRepository.findTopByApplicationApplicationIdOrderByReviewedAtDesc(applicationId)
                 .map(this::mapToDTO)
                 .orElse(null);

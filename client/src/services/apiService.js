@@ -399,6 +399,23 @@ export const feedbackService = {
     return response.data;
   },
 
+  // Delete interview feedback
+  deleteInterviewFeedback: async (interviewId, feedbackId) => {
+    const response = await api.delete(
+      `/interviews/${interviewId}/feedback/${feedbackId}`
+    );
+    return response.data;
+  },
+
+  // Update interview feedback
+  updateInterviewFeedback: async (interviewId, feedbackId, feedbackData) => {
+    const response = await api.put(
+      `/interviews/${interviewId}/feedback/${feedbackId}`,
+      feedbackData
+    );
+    return response.data;
+  },
+
   // Check candidate history
   checkCandidateHistory: async (applicationId) => {
     const response = await api.post(

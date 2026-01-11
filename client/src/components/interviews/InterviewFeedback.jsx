@@ -1,12 +1,18 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { submitFeedback } from "../../services/interviewService";
+import { feedbackService } from "../../services/apiService";
 import {
   getErrorMessage,
   showError,
   showSuccess,
 } from "../../utils/toastUtils";
 
-const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
+const InterviewFeedback = ({
+  interviewId,
+  candidateName,
+  onComplete,
+  initialData,
+}) => {
   const [formData, setFormData] = useState({
     feedback_comments: "",
     overall_rating: 3,
@@ -22,9 +28,45 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
   const [techRatings, setTechRatings] = useState([
     { tech: "Primary Tech", rating: 3 },
   ]);
-  const [autoScoreEnabled, setAutoScoreEnabled] = useState(true);
+  // Automated score disabled per requirement (manual-only)
+  const [autoScoreEnabled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Prefill when editing existing feedback
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        feedback_comments:
+          initialData.feedback_comments ?? prev.feedback_comments,
+        overall_rating: initialData.overall_rating ?? prev.overall_rating,
+        communication_skills:
+          initialData.communication_skills ?? prev.communication_skills,
+        technical_knowledge:
+          initialData.technical_knowledge ?? prev.technical_knowledge,
+        cultural_fit_rating:
+          initialData.cultural_fit_rating ?? prev.cultural_fit_rating,
+        recommendation: initialData.recommendation ?? prev.recommendation,
+        strengths: initialData.strengths ?? prev.strengths,
+        areas_of_improvement:
+          initialData.areas_of_improvement ?? prev.areas_of_improvement,
+        stage: initialData.stage ?? prev.stage,
+        hr_notes: initialData.hr_notes ?? prev.hr_notes,
+      }));
+      if (
+        Array.isArray(initialData.tech_ratings) &&
+        initialData.tech_ratings.length > 0
+      ) {
+        setTechRatings(
+          initialData.tech_ratings.map((t) => ({
+            tech: t.tech,
+            rating: t.rating,
+          }))
+        );
+      }
+    }
+  }, [initialData]);
 
   const recommendations = [
     "STRONG_HIRE",
@@ -54,23 +96,7 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
     setTechRatings(techRatings.filter((_, i) => i !== index));
   };
 
-  const computeAutoScore = () => {
-    const ratedTech = techRatings.filter((t) => t.rating && t.tech);
-    const techAvg =
-      ratedTech.length > 0
-        ? ratedTech.reduce((sum, t) => sum + Number(t.rating || 0), 0) /
-          ratedTech.length
-        : 0;
-    const softAvg =
-      (Number(formData.communication_skills || 0) +
-        Number(formData.cultural_fit_rating || 0)) /
-      2;
-    const overall = Number(formData.overall_rating || 0);
-    const weighted = overall * 0.3 + techAvg * 0.5 + softAvg * 0.2;
-    return Number(weighted.toFixed(1));
-  };
-
-  const autoScore = computeAutoScore();
+  // Automated score removed; no auto-score calculation sent
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,12 +104,22 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
     setError("");
 
     try {
-      await submitFeedback(interviewId, {
+      const payload = {
         ...formData,
         tech_ratings: techRatings,
-        auto_score: autoScoreEnabled ? autoScore : null,
-        scoring_version: autoScoreEnabled ? "v1-standard" : undefined,
-      });
+      };
+
+      if (initialData?.id) {
+        // Update existing feedback
+        await feedbackService.updateInterviewFeedback(
+          interviewId,
+          initialData.id,
+          payload
+        );
+      } else {
+        // Submit new feedback
+        await submitFeedback(interviewId, payload);
+      }
       showSuccess("Feedback submitted successfully!");
       if (onComplete) onComplete();
     } catch (err) {
@@ -154,21 +190,7 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-3 mt-6 md:mt-8">
-              <label className="text-sm text-gray-700 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={autoScoreEnabled}
-                  onChange={(e) => setAutoScoreEnabled(e.target.checked)}
-                />
-                Enable automated score
-              </label>
-              {autoScoreEnabled && (
-                <span className="text-sm font-semibold text-indigo-700">
-                  Auto Score: {autoScore}
-                </span>
-              )}
-            </div>
+            {/* Automated score controls removed (manual-only scoring) */}
           </div>
 
           <RatingInput
@@ -259,12 +281,7 @@ const InterviewFeedback = ({ interviewId, candidateName, onComplete }) => {
                 </div>
               ))}
             </div>
-            {autoScoreEnabled && (
-              <p className="text-xs text-gray-500">
-                Auto-score weights: 50% tech average, 30% overall, 20%
-                communication/culture.
-              </p>
-            )}
+            {/* Auto-score notes removed */}
           </div>
 
           <div>

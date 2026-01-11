@@ -17,6 +17,9 @@ const ScheduleInterview = ({
   candidateName,
   onComplete,
   onClose,
+  defaultMode = "ONLINE",
+  defaultSendInvites = true,
+  defaultOnlineAssessmentEnabled = false,
 }) => {
   const [rounds, setRounds] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -25,7 +28,7 @@ const ScheduleInterview = ({
     roundId: "",
     interviewDate: "",
     interviewTime: "",
-    mode: "ONLINE",
+    mode: defaultMode || "ONLINE",
     interviewLink: "",
     location: "",
     panelistIds: [],
@@ -38,14 +41,14 @@ const ScheduleInterview = ({
     roundType: "TECHNICAL",
     durationMinutes: 60,
   });
-  const [sendInvites, setSendInvites] = useState(true);
+  const [sendInvites, setSendInvites] = useState(defaultSendInvites);
   const [notifyTargets, setNotifyTargets] = useState({
     candidate: true,
     recruiters: true,
     panelists: true,
   });
   const [onlineAssessment, setOnlineAssessment] = useState({
-    enabled: false,
+    enabled: defaultOnlineAssessmentEnabled,
     name: "Online Test",
     date: "",
     time: "",
@@ -75,6 +78,22 @@ const ScheduleInterview = ({
       setFormData((prev) => ({ ...prev, applicationId }));
     }
   }, [applicationId]);
+
+  // Sync preset mode/send/test when parent changes them
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, mode: defaultMode || "ONLINE" }));
+  }, [defaultMode]);
+
+  useEffect(() => {
+    setSendInvites(defaultSendInvites);
+  }, [defaultSendInvites]);
+
+  useEffect(() => {
+    setOnlineAssessment((prev) => ({
+      ...prev,
+      enabled: defaultOnlineAssessmentEnabled,
+    }));
+  }, [defaultOnlineAssessmentEnabled]);
 
   const checkForPreviousHistory = async () => {
     try {

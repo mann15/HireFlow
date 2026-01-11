@@ -70,14 +70,12 @@ const Navbar = () => {
         return [
           { name: "Dashboard", path: "/interviewer/dashboard" },
           { name: "Interviews", path: "/interviews/my" },
-          { name: "Candidates", path: "/candidates" },
         ];
 
       case "REVIEWER":
         return [
           { name: "Dashboard", path: "/reviewer/dashboard" },
           { name: "Applications", path: "/applications" },
-          { name: "Candidates", path: "/candidates" },
         ];
 
       case "VIEWER":
