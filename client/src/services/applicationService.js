@@ -4,7 +4,11 @@ const BASE = "/applications";
 
 // Helper function to validate applicationId
 const validateApplicationId = (applicationId) => {
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
 };
@@ -28,15 +32,24 @@ export const getApplicationsByCandidate = async (candidateId) => {
 };
 
 // Get application by ID
-export const getApplicationById = async (applicationId, isCandidate = false) => {
+export const getApplicationById = async (
+  applicationId,
+  isCandidate = false
+) => {
   // Validate applicationId
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
 
   if (isCandidate) {
     // Use candidate-specific endpoint
-    const response = await api.get(`/candidates/me/applications/${applicationId}`);
+    const response = await api.get(
+      `/candidates/me/applications/${applicationId}`
+    );
     return response.data;
   }
   const response = await api.get(`${BASE}/${applicationId}`);
@@ -66,6 +79,14 @@ export const updateApplicationStatus = async (
 export const moveToScreening = async (applicationId) => {
   validateApplicationId(applicationId);
   const response = await api.put(`${BASE}/${applicationId}/move-to-screening`);
+  return response.data;
+};
+
+// Attach a CV to an existing application
+export const attachCvToApplication = async (applicationId, cvId) => {
+  validateApplicationId(applicationId);
+  if (!cvId) throw new Error("Invalid CV ID");
+  const response = await api.put(`${BASE}/${applicationId}/attach-cv/${cvId}`);
   return response.data;
 };
 
@@ -134,7 +155,11 @@ export const confirmJoining = async (applicationId, joiningDate) => {
 // Get application timeline/history
 export const getApplicationTimeline = async (applicationId) => {
   // Validate applicationId
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
   const response = await api.get(`${BASE}/${applicationId}/timeline`);

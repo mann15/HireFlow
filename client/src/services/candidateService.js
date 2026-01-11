@@ -22,15 +22,16 @@ export const candidateService = {
         formData.append("positionId", positionId);
       }
 
-      const response = await api.post(
-        `${CANDIDATE_API_BASE_URL}/${candidateId}/cv`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      // Use /me/cv endpoint if no candidateId provided (candidate uploading their own CV)
+      const endpoint = candidateId
+        ? `${CANDIDATE_API_BASE_URL}/${candidateId}/cv`
+        : `${CANDIDATE_API_BASE_URL}/me/cv`;
+
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -51,14 +52,23 @@ export const candidateService = {
   },
 
   // Add skills to candidate
-  addCandidateSkill: async (candidateId, skillId, proficiencyLevelId) => {
+  addCandidateSkill: async (
+    candidateId,
+    skillId,
+    proficiencyLevelId,
+    yearsOfExperience
+  ) => {
     try {
+      const payload = {
+        skillId,
+        proficiencyLevelId,
+      };
+      if (yearsOfExperience !== null && yearsOfExperience !== undefined) {
+        payload.yearsOfExperience = yearsOfExperience;
+      }
       const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`,
-        {
-          skillId,
-          proficiencyLevelId,
-        }
+        payload
       );
       return response.data;
     } catch (error) {
@@ -203,9 +213,7 @@ export const candidateService = {
   // Get candidate's CVs
   getCandidateCVs: async (candidateId) => {
     try {
-      const response = await api.get(
-        `${CANDIDATE_API_BASE_URL}/${candidateId}/cvs`
-      );
+      const response = await api.get(`${CANDIDATE_API_BASE_URL}/me/cvs`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -215,8 +223,23 @@ export const candidateService = {
   // Get candidate's skills
   getCandidateSkills: async (candidateId) => {
     try {
-      const response = await api.get(
-        `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`
+      // If no candidateId, use /me endpoint for current candidate
+      const endpoint = candidateId
+        ? `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`
+        : `${CANDIDATE_API_BASE_URL}/me/skills`;
+
+      const response = await api.get(endpoint);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  // Delete candidate skill
+  deleteCandidateSkill: async (candidateSkillId) => {
+    try {
+      const response = await api.delete(
+        `${CANDIDATE_API_BASE_URL}/skills/${candidateSkillId}`
       );
       return response.data;
     } catch (error) {

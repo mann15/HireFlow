@@ -130,7 +130,7 @@ public class JobOfferController {
             JobOffers offer = jobOfferService.getOfferById(offerId);
 
             // If candidate, ensure they own the offer
-                if (user.getRole() != null && user.getRole().getRoleName() != null
+            if (user.getRole() != null && user.getRole().getRoleName() != null
                     && user.getRole().getRoleName().equalsIgnoreCase(Roles.CANDIDATE)) {
                 if (offer.getApplication().getCandidate().getUser() == null
                         || !offer.getApplication().getCandidate().getUser().getUserId().equals(user.getUserId())) {
@@ -157,7 +157,7 @@ public class JobOfferController {
             JobOffers offer = jobOfferService.getOfferById(offerId);
 
             // If candidate, ensure they own the offer
-                if (user.getRole() != null && user.getRole().getRoleName() != null
+            if (user.getRole() != null && user.getRole().getRoleName() != null
                     && user.getRole().getRoleName().equalsIgnoreCase(Roles.CANDIDATE)) {
                 if (offer.getApplication().getCandidate().getUser() == null
                         || !offer.getApplication().getCandidate().getUser().getUserId().equals(user.getUserId())) {

@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface JobOffersRepository extends JpaRepository<JobOffers, Long> {
     List<JobOffers> findByApplication(JobApplication application);
-    
+
     List<JobOffers> findByStatus(JobOffers.OfferStatus status);
 
     // Retrieve offers for a specific candidate user

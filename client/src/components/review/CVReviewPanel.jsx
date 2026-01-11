@@ -5,11 +5,14 @@ import {
   getApplicationById,
   moveToInterview,
 } from "../../services/applicationService";
+import { getPositionReviewers } from "../../services/reviewService";
 import {
   checkCandidateHistory,
   submitScreeningFeedback,
   verifyCandidateSkill,
+  getScreeningFeedback,
 } from "../../services/reviewService";
+import AddSkillsModal from "../candidates/AddSkillsModal";
 import {
   getErrorMessage,
   showError,
@@ -21,6 +24,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
   const { currentUser } = useSelector((state) => state.user);
   const [application, setApplication] = useState(null);
   const [candidate, setCandidate] = useState(null);
+  const [cvUrl, setCvUrl] = useState("");
   const [skills, setSkills] = useState([]);
   const [comments, setComments] = useState("");
   const [recommendation, setRecommendation] = useState("HOLD");
@@ -28,10 +32,15 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [isReviewerAssigned, setIsReviewerAssigned] = useState(false);
+  const [canSubmitReview, setCanSubmitReview] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [showAddSkills, setShowAddSkills] = useState(false);
 
   useEffect(() => {
     loadApplicationAndCandidate();
     checkCandidateHistoryData();
+    loadFeedbacks();
   }, [applicationId]);
 
   const loadApplicationAndCandidate = async () => {
@@ -39,6 +48,10 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
       setLoading(true);
       const appData = await getApplicationById(applicationId);
       setApplication(appData);
+
+      // Determine CV URL from application record (cloud or local path)
+      const url = appData?.cv?.cloudUrl || appData?.cv?.cvFilePath;
+      setCvUrl(url || "");
 
       const candidateData = await candidateService.getCandidateById(
         appData.candidate.candidateId
@@ -55,10 +68,41 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
         }));
         setSkills(skillsWithVerification);
       }
+
+      // Determine permission: assigned reviewer or privileged role
+      try {
+        const reviewers = await getPositionReviewers(
+          appData.position.positionId
+        );
+        const userId =
+          currentUser?.userId || currentUser?.id || currentUser?.user?.id;
+        const assigned =
+          Array.isArray(reviewers) &&
+          reviewers.some(
+            (r) => r.reviewerId === userId || r?.reviewer?.userId === userId
+          );
+        setIsReviewerAssigned(!!assigned);
+      } catch (e) {
+        // If reviewers cannot be fetched, default to not assigned
+        setIsReviewerAssigned(false);
+      }
+
+      const roleName = currentUser?.role?.roleName || currentUser?.roleName;
+      const privilegedRoles = ["ADMIN", "SUPER_ADMIN", "HR", "REVIEWER"];
+      setCanSubmitReview(privilegedRoles.includes(roleName));
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFeedbacks = async () => {
+    try {
+      const data = await getScreeningFeedback(applicationId);
+      setFeedbacks(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error loading feedbacks:", error);
     }
   };
 
@@ -94,6 +138,13 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
   };
 
   const handleSubmitReview = async () => {
+    if (!isReviewerAssigned) {
+      showWarning(
+        "You must be assigned as a reviewer for this position to submit feedback."
+      );
+      return;
+    }
+
     if (!comments.trim()) {
       showWarning("Please add review comments");
       return;
@@ -132,23 +183,22 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
         recommendation: recommendation,
       });
 
-      // If recommendation is SHORTLIST, automatically move to interview stage
+      // Backend already updates status based on recommendation (SHORTLIST -> INTERVIEW, REJECT -> REJECTED, HOLD -> ON_HOLD)
       if (recommendation === "SHORTLIST") {
-        try {
-          await moveToInterview(applicationId);
-          showSuccess(
-            "Review submitted and candidate moved to interview stage!"
-          );
-        } catch (moveErr) {
-          console.error("Error moving to interview:", moveErr);
-          showError(
-            "Review submitted, but failed to move to interview stage. Please move manually."
-          );
-        }
+        showSuccess(
+          "Review submitted. Candidate moved to Interview stage automatically."
+        );
+      } else if (recommendation === "REJECT") {
+        showSuccess(
+          "Review submitted. Candidate marked Rejected after screening."
+        );
       } else {
-        showSuccess("Review submitted successfully");
+        showSuccess(
+          "Review submitted. Candidate kept on Hold after screening."
+        );
       }
 
+      await loadFeedbacks();
       if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -168,6 +218,46 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
 
   return (
     <div className="space-y-6">
+      {/* Assignment Notice */}
+      {!isReviewerAssigned && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+          <h3 className="text-sm font-medium text-blue-800">
+            Reviewer not assigned
+          </h3>
+          <p className="mt-1 text-sm text-blue-700">
+            You are not assigned as a reviewer for this position. You can still
+            view the CV and candidate info, but submitting review actions is
+            disabled unless a recruiter/admin assigns you.
+          </p>
+        </div>
+      )}
+      {/* CV Preview */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">CV Preview</h3>
+        {cvUrl ? (
+          <>
+            <div className="h-[600px] border rounded">
+              <iframe
+                src={cvUrl}
+                className="w-full h-full"
+                title="CV Preview"
+              />
+            </div>
+            <div className="mt-4 flex gap-3">
+              <a
+                href={cvUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
+              >
+                Open CV in New Tab
+              </a>
+            </div>
+          </>
+        ) : (
+          <p className="text-gray-500">No CV attached to this application.</p>
+        )}
+      </div>
       {/* History Notification */}
       {notification && (
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
@@ -230,18 +320,44 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
 
       {/* Skills Evaluation */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">
-          Skills Evaluation & Verification
-        </h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Tick the skills the candidate possesses and specify years of
-          experience for each skill.
-        </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="text-lg font-semibold">
+              Skills Evaluation & Verification
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Tick the skills the candidate possesses and specify years of
+              experience for each skill.
+            </p>
+          </div>
+          {skills.length === 0 && isReviewerAssigned && (
+            <button
+              onClick={() => setShowAddSkills(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 font-medium text-sm"
+            >
+              + Add Skills
+            </button>
+          )}
+        </div>
 
         {skills.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">
-            No skills listed for this candidate
-          </p>
+          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <p className="text-gray-600 font-medium mb-2">
+              No skills added yet
+            </p>
+            <p className="text-sm text-gray-500">
+              Add skills from your profile so reviewers can verify them during
+              CV review.
+            </p>
+            {isReviewerAssigned && (
+              <button
+                onClick={() => setShowAddSkills(true)}
+                className="text-blue-600 hover:text-blue-700 font-medium mt-3"
+              >
+                Add skills for verification
+              </button>
+            )}
+          </div>
         ) : (
           <div className="space-y-3">
             {skills.map((skill, index) => (
@@ -256,6 +372,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
                     handleSkillVerification(index, e.target.checked)
                   }
                   className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  disabled={!isReviewerAssigned}
                 />
                 <div className="flex-1">
                   <p className="font-medium">{skill.skillName || skill.name}</p>
@@ -278,7 +395,7 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
                     onChange={(e) =>
                       handleYearsOfExperience(index, e.target.value)
                     }
-                    disabled={!skill.verified}
+                    disabled={!skill.verified || !isReviewerAssigned}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500"
                     placeholder="0"
                   />
@@ -343,7 +460,9 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
           onClick={handleSubmitReview}
           disabled={saving}
           className={`px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium ${
-            saving ? "opacity-50 cursor-not-allowed" : ""
+            saving || !canSubmitReview || !isReviewerAssigned
+              ? "opacity-50 cursor-not-allowed"
+              : ""
           }`}
         >
           {saving ? (
@@ -375,6 +494,56 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
           )}
         </button>
       </div>
+
+      {/* Previous Feedbacks */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">
+          Previous Screening Feedback
+        </h3>
+        {feedbacks.length === 0 ? (
+          <p className="text-gray-500 text-sm">
+            No screening feedback submitted yet.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {feedbacks.map((fb) => (
+              <div
+                key={`${fb.reviewerId}-${fb.reviewedAt}`}
+                className="p-4 border rounded-lg"
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <p className="font-medium">{fb.reviewerName || "Reviewer"}</p>
+                  <span className="text-xs text-gray-500">{fb.reviewedAt}</span>
+                </div>
+                <p className="text-sm text-gray-700 mb-1">
+                  Recommendation: {fb.recommendation}
+                </p>
+                {fb.score !== undefined && (
+                  <p className="text-sm text-gray-700 mb-1">
+                    Score: {fb.score}
+                  </p>
+                )}
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {fb.comments}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add Skills Modal */}
+      {candidate && (
+        <AddSkillsModal
+          candidateId={candidate.candidateId}
+          isOpen={showAddSkills}
+          onClose={() => setShowAddSkills(false)}
+          onSkillAdded={() => {
+            setShowAddSkills(false);
+            loadApplicationAndCandidate();
+          }}
+        />
+      )}
     </div>
   );
 };

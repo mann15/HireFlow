@@ -22,7 +22,9 @@ const ApplicationDetailsPage = () => {
   const { applicationId } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
-  const { currentApplication, loading } = useSelector((state) => state.application);
+  const { currentApplication, loading } = useSelector(
+    (state) => state.application
+  );
   const userRole = currentUser?.role?.toUpperCase();
   const isCandidate = userRole === "CANDIDATE";
 
@@ -269,14 +271,6 @@ const ApplicationDetailsPage = () => {
                       Quick Actions
                     </h3>
                     <div className="flex flex-wrap gap-3">
-                      {application.status === "SCREENING" && (
-                        <Link
-                          to={`/applications/${applicationId}#review`}
-                          className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                        >
-                          Review CV
-                        </Link>
-                      )}
                       {["SCREENING", "INTERVIEW"].includes(
                         application.status
                       ) && (
@@ -429,13 +423,23 @@ const ApplicationDetailsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <ScheduleInterview
-                applicationId={application.id}
-                positionId={application.positionId}
-                candidateName={application.candidateName}
+                applicationId={
+                  application.applicationId || application.id || applicationId
+                }
+                positionId={
+                  application.position?.positionId || application.positionId
+                }
+                candidateName={
+                  application.candidateName ||
+                  `${application.candidate?.firstName || ""} ${
+                    application.candidate?.lastName || ""
+                  }`.trim()
+                }
                 onComplete={() => {
                   setShowScheduleInterview(false);
                   fetchApplication();
                 }}
+                onClose={() => setShowScheduleInterview(false)}
               />
             </div>
           </div>

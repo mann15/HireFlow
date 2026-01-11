@@ -76,19 +76,21 @@ const PendingDocumentsQueue = () => {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
+
                   <h3 className="font-semibold text-lg">
-                    {doc.documentTypeName}
+                    {doc.documentType.name}
                   </h3>
                   <p className="text-sm text-gray-600">
-                    Candidate: {doc.candidateName}
+                    Candidate: {doc.jobApplication.candidate.firstName}{" "}
+                    {doc.jobApplication.candidate.lastName}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Position: {doc.positionTitle}
+                    Position: {doc.jobApplication.position.jobTitle}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Uploaded:{" "}
-                    {doc.uploadedDate
-                      ? format(new Date(doc.uploadedDate), "PPP")
+                    {doc.uploadedAt
+                      ? format(new Date(doc.uploadedAt), "PPP")
                       : "N/A"}
                   </p>
                 </div>

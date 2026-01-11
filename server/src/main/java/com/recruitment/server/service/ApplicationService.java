@@ -18,7 +18,6 @@ public class ApplicationService {
     private final CandidateRepository candidateRepository;
     private final JobRepository jobRepository;
     private final CandidateCVRepository candidateCVRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
     private final PositionReviewerRepository positionReviewerRepository;
@@ -176,13 +175,42 @@ public class ApplicationService {
             JobApplication.Status status, String reason, User updatedBy) {
 
         JobApplication application = jobApplicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(
+                        () -> new com.recruitment.server.exception.ResourceNotFoundException("Application not found"));
 
         if (status == JobApplication.Status.ON_HOLD && (reason == null || reason.trim().isEmpty())) {
             throw new RuntimeException("Reason is required to move an application to ON_HOLD");
         }
 
         JobApplication.Status oldStatus = application.getStatus();
+
+        // Validate transition-specific rules
+        if (status == JobApplication.Status.SCREENING) {
+            if (oldStatus == JobApplication.Status.SCREENING) {
+                throw new com.recruitment.server.exception.InvalidTransitionException(
+                        "Application already in SCREENING");
+            }
+            if (oldStatus == JobApplication.Status.SELECTED
+                    || oldStatus == JobApplication.Status.REJECTED
+                    || oldStatus == JobApplication.Status.WITHDRAWN) {
+                throw new com.recruitment.server.exception.InvalidTransitionException(
+                        "Cannot move from " + oldStatus + " to SCREENING");
+            }
+            if (!(oldStatus == JobApplication.Status.APPLIED || oldStatus == JobApplication.Status.ON_HOLD)) {
+                throw new com.recruitment.server.exception.InvalidTransitionException(
+                        "Only APPLIED or ON_HOLD applications can move to SCREENING");
+            }
+            if (application.getCv() == null) {
+                // If CV not explicitly attached to the application, try to auto-attach
+                // an existing CV for the candidate (if present).
+                candidateCVRepository.findByCandidate(application.getCandidate()).ifPresent(application::setCv);
+
+                if (application.getCv() == null) {
+                    throw new com.recruitment.server.exception.MissingDataException(
+                            "CV is required to move to SCREENING");
+                }
+            }
+        }
         application.setStatus(status);
         application.setStatusUpdatedAt(LocalDateTime.now());
         application.setStatusUpdatedBy(updatedBy);
@@ -232,6 +260,26 @@ public class ApplicationService {
         return updateApplicationStatus(applicationId, JobApplication.Status.SCREENING, null, updatedBy);
     }
 
+    public JobApplication attachCvToApplication(Long applicationId, Long cvId, User updatedBy) {
+        JobApplication application = jobApplicationRepository.findById(applicationId)
+                .orElseThrow(
+                        () -> new com.recruitment.server.exception.ResourceNotFoundException("Application not found"));
+
+        CandidateCV cv = candidateCVRepository.findById(cvId)
+                .orElseThrow(() -> new com.recruitment.server.exception.ResourceNotFoundException("CV not found"));
+
+        // Ensure the CV belongs to the same candidate as the application
+        if (!cv.getCandidate().getCandidateId().equals(application.getCandidate().getCandidateId())) {
+            throw new com.recruitment.server.exception.InvalidTransitionException(
+                    "CV does not belong to the application candidate");
+        }
+
+        application.setCv(cv);
+        application.setStatusUpdatedBy(updatedBy);
+        JobApplication updated = jobApplicationRepository.save(application);
+        return updated;
+    }
+
     public JobApplication moveToInterview(Long applicationId, User updatedBy) {
         return updateApplicationStatus(applicationId, JobApplication.Status.INTERVIEW, null, updatedBy);
     }
@@ -279,13 +327,14 @@ public class ApplicationService {
      * - REVIEWER: Only applications for positions they're assigned to
      * - INTERVIEWER: Only applications for interviews they're assigned to
      * - RECRUITER: Only applications for positions they created
-     * - HR: All applications (can see all for culture fit, negotiation, documentation)
+     * - HR: All applications (can see all for culture fit, negotiation,
+     * documentation)
      * - ADMIN/SUPER_ADMIN: All applications
      * - VIEWER: All applications (read-only)
      */
     public List<JobApplication> getApplicationsByRole(User user) {
         String roleName = user.getRole().getRoleName();
-        
+
         switch (roleName) {
             case "REVIEWER":
                 return jobApplicationRepository.findByReviewerId(user.getUserId());
@@ -309,12 +358,12 @@ public class ApplicationService {
      */
     public boolean hasAccessToApplication(User user, JobApplication application) {
         String roleName = user.getRole().getRoleName();
-        
+
         switch (roleName) {
             case "REVIEWER":
                 // Check if reviewer is assigned to the position
                 return positionReviewerRepository.existsByPositionAndReviewer(
-                    application.getPosition(), user);
+                        application.getPosition(), user);
             case "INTERVIEWER":
                 // Check if interviewer is assigned to any interview for this application
                 List<CandidateInterview> interviews = candidateInterviewRepository.findByApplication(application);
@@ -330,7 +379,11 @@ public class ApplicationService {
             case "RECRUITER":
                 // Check if recruiter created the position
                 return application.getPosition().getCreatedBy() != null &&
-                       application.getPosition().getCreatedBy().getUserId().equals(user.getUserId());
+                        application.getPosition().getCreatedBy().getUserId().equals(user.getUserId());
+            case "CANDIDATE":
+                // Check if candidate is the applicant
+                return application.getCandidate().getUser() != null &&
+                        application.getCandidate().getUser().getUserId().equals(user.getUserId());
             case "HR":
             case "ADMIN":
             case "SUPER_ADMIN":

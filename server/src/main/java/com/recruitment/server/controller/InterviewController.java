@@ -49,25 +49,63 @@ public class InterviewController {
     public ResponseEntity<?> scheduleInterview(@RequestBody Map<String, Object> scheduleData,
             Authentication authentication) {
         try {
-            Long applicationId = Long.valueOf(scheduleData.get("applicationId").toString());
-            Long roundId = Long.valueOf(scheduleData.get("roundId").toString());
-            LocalDateTime interviewDate = LocalDateTime.parse(scheduleData.get("interviewDate").toString());
+            Object appIdObj = scheduleData.get("applicationId");
+            if (appIdObj == null) {
+                throw new RuntimeException("applicationId is required");
+            }
+            Long applicationId = Long.valueOf(appIdObj.toString());
+
+            Long roundId = null;
+            if (scheduleData.get("roundId") != null && !"".equals(scheduleData.get("roundId"))) {
+                Object rid = scheduleData.get("roundId");
+                if (rid instanceof Number n) {
+                    roundId = n.longValue();
+                } else {
+                    roundId = Long.valueOf(rid.toString());
+                }
+            }
+
+            Object interviewDateObj = scheduleData.get("interviewDate");
+            if (interviewDateObj == null) {
+                throw new RuntimeException("interviewDate is required");
+            }
+            LocalDateTime interviewDate = LocalDateTime.parse(interviewDateObj.toString());
+
+            Object modeObj = scheduleData.get("mode");
+            if (modeObj == null) {
+                throw new RuntimeException("mode is required");
+            }
             CandidateInterview.InterviewMode mode = CandidateInterview.InterviewMode
-                    .valueOf(scheduleData.get("mode").toString());
+                    .valueOf(modeObj.toString());
+
             String interviewLink = scheduleData.get("interviewLink") != null
                     ? scheduleData.get("interviewLink").toString()
                     : null;
 
             @SuppressWarnings("unchecked")
-            List<Long> panelistIds = scheduleData.get("panelistIds") != null
-                    ? (List<Long>) scheduleData.get("panelistIds")
-                    : new ArrayList<>();
+            Map<String, Object> customRound = (Map<String, Object>) scheduleData.get("customRound");
+
+            List<Long> panelistIds = new ArrayList<>();
+            Object panelObj = scheduleData.get("panelistIds");
+            if (panelObj instanceof List<?> list) {
+                for (Object o : list) {
+                    if (o instanceof Number n) {
+                        panelistIds.add(n.longValue());
+                    } else if (o != null) {
+                        try {
+                            panelistIds.add(Long.valueOf(o.toString()));
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
 
             User scheduledBy = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             CandidateInterview interview = interviewService.scheduleInterview(
-                    applicationId, roundId, interviewDate, mode, interviewLink, panelistIds, scheduledBy);
+                    applicationId, roundId, customRound, interviewDate, mode, interviewLink, panelistIds,
+                    scheduledBy);
 
             return ResponseEntity.ok(interview);
         } catch (Exception e) {
@@ -90,10 +128,20 @@ public class InterviewController {
                     ? bulkData.get("interviewLink").toString()
                     : null;
 
-            @SuppressWarnings("unchecked")
-            List<Long> panelistIds = bulkData.get("panelistIds") != null
-                    ? (List<Long>) bulkData.get("panelistIds")
-                    : new ArrayList<>();
+            List<Long> panelistIds = new ArrayList<>();
+            Object panelObj = bulkData.get("panelistIds");
+            if (panelObj instanceof List<?> list) {
+                for (Object o : list) {
+                    if (o instanceof Number n) {
+                        panelistIds.add(n.longValue());
+                    } else if (o != null) {
+                        try {
+                            panelistIds.add(Long.valueOf(o.toString()));
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
 
             User scheduledBy = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));

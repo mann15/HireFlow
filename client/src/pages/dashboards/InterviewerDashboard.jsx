@@ -1,22 +1,227 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { interviewService, candidateService } from "../../services/apiService";
+import Loader from "../../components/Loader";
 
 const InterviewerDashboard = () => {
+  const [stats, setStats] = useState({
+    scheduledInterviews: 0,
+    pendingFeedback: 0,
+    completedInterviews: 0,
+    upcomingToday: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [upcomingInterviews, setUpcomingInterviews] = useState([]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const interviews = await interviewService.getInterviews().catch(() => []);
+
+      const today = new Date().toDateString();
+      const todayInterviews = Array.isArray(interviews)
+        ? interviews.filter((i) => {
+            const interviewDate = new Date(i.scheduledDate).toDateString();
+            return interviewDate === today;
+          })
+        : [];
+
+      const scheduled = Array.isArray(interviews)
+        ? interviews.filter((i) => i.status === "SCHEDULED")
+        : [];
+
+      const pending = Array.isArray(interviews)
+        ? interviews.filter((i) => i.status === "SCHEDULED" && !i.feedback)
+        : [];
+
+      const completed = Array.isArray(interviews)
+        ? interviews.filter((i) => i.status === "COMPLETED")
+        : [];
+
+      setStats({
+        scheduledInterviews: scheduled.length,
+        pendingFeedback: pending.length,
+        completedInterviews: completed.length,
+        upcomingToday: todayInterviews.length,
+      });
+
+      setUpcomingInterviews(
+        scheduled.slice(0, 5).map((i) => ({
+          id: i.id,
+          candidateName: i.candidateName || "N/A",
+          position: i.position || "N/A",
+          scheduledDate: new Date(i.scheduledDate).toLocaleString(),
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to load interviewer dashboard data:", err);
+      setError("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">Interviewer Dashboard</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 border rounded">Scheduled Interviews</div>
-        <div className="p-4 border rounded flex items-center justify-between">
-          <span>Pending Feedback</span>
-          <Link
-            to="/interviews/my"
-            className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Go to My Interviews
-          </Link>
+    <div className="min-h-screen bg-gray-50 pt-24 pb-8">
+      <div className="container mx-auto px-4">
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <h1 className="text-3xl font-bold mb-8">Interviewer Dashboard</h1>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Scheduled Interviews</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {stats.scheduledInterviews}
+                </p>
+              </div>
+              <div className="text-4xl text-blue-200">📅</div>
+            </div>
+            <Link
+              to="/interviews/my"
+              className="mt-4 inline-block text-blue-600 hover:text-blue-800 font-medium text-sm"
+            >
+              View Interviews →
+            </Link>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Pending Feedback</p>
+                <p className="text-3xl font-bold text-orange-600">
+                  {stats.pendingFeedback}
+                </p>
+              </div>
+              <div className="text-4xl text-orange-200">📝</div>
+            </div>
+            <Link
+              to="/interviews/my"
+              className="mt-4 inline-block text-orange-600 hover:text-orange-800 font-medium text-sm"
+            >
+              Add Feedback →
+            </Link>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Completed Interviews</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {stats.completedInterviews}
+                </p>
+              </div>
+              <div className="text-4xl text-green-200">✅</div>
+            </div>
+            <Link
+              to="/interviews/my"
+              className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium text-sm"
+            >
+              View History →
+            </Link>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Today</p>
+                <p className="text-3xl font-bold text-purple-600">
+                  {stats.upcomingToday}
+                </p>
+              </div>
+              <div className="text-4xl text-purple-200">⏰</div>
+            </div>
+            <p className="mt-4 text-sm text-gray-500">
+              Interviews scheduled today
+            </p>
+          </div>
         </div>
-        <div className="p-4 border rounded">Interview History</div>
+
+        {/* Upcoming Interviews */}
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-xl font-bold mb-4">Upcoming Interviews</h2>
+          {upcomingInterviews.length > 0 ? (
+            <div className="space-y-3">
+              {upcomingInterviews.map((interview) => (
+                <div
+                  key={interview.id}
+                  className="flex items-center justify-between border-b pb-3"
+                >
+                  <div>
+                    <p className="font-medium">{interview.candidateName}</p>
+                    <p className="text-sm text-gray-500">
+                      {interview.position}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {interview.scheduledDate}
+                    </p>
+                  </div>
+                  <Link
+                    to={`/interviews/${interview.id}`}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    View
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500">No upcoming interviews</p>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              to="/interviews/my"
+              className="p-4 border rounded-lg hover:bg-blue-50 transition"
+            >
+              <p className="font-medium">My Interviews</p>
+              <p className="text-sm text-gray-500">View all interviews</p>
+            </Link>
+            <Link
+              to="/interviews/my"
+              className="p-4 border rounded-lg hover:bg-orange-50 transition"
+            >
+              <p className="font-medium">Add Feedback</p>
+              <p className="text-sm text-gray-500">Submit interview feedback</p>
+            </Link>
+            <Link
+              to="/candidates"
+              className="p-4 border rounded-lg hover:bg-green-50 transition"
+            >
+              <p className="font-medium">Candidate Pool</p>
+              <p className="text-sm text-gray-500">Browse candidates</p>
+            </Link>
+            <Link
+              to="/interviews/my"
+              className="p-4 border rounded-lg hover:bg-purple-50 transition"
+            >
+              <p className="font-medium">Schedule Interview</p>
+              <p className="text-sm text-gray-500">Book new interview</p>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

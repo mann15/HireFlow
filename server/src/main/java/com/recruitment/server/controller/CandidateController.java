@@ -2,6 +2,7 @@ package com.recruitment.server.controller;
 
 import com.recruitment.server.model.*;
 import com.recruitment.server.repository.CandidateRepository;
+import com.recruitment.server.repository.CandidateCVRepository;
 import com.recruitment.server.repository.JobApplicationRepository;
 import com.recruitment.server.repository.JobRepository;
 import com.recruitment.server.repository.UserRepository;
@@ -30,6 +31,7 @@ public class CandidateController {
 
     private final CandidateService candidateService;
     private final CandidateRepository candidateRepository;
+    private final CandidateCVRepository candidateCVRepository;
     private final JobApplicationRepository jobApplicationRepository;
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
@@ -111,13 +113,43 @@ public class CandidateController {
     @PostMapping("/{candidateId}/skills")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
     public ResponseEntity<?> addCandidateSkill(@PathVariable Long candidateId,
-            @RequestBody Map<String, Long> skillData) {
+            @RequestBody Map<String, Object> skillData) {
         try {
-            Long skillId = skillData.get("skillId");
-            Long proficiencyLevelId = skillData.get("proficiencyLevelId");
+            // Extract skillId - handle both String and Number
+            Long skillId = null;
+            Object skillIdObj = skillData.get("skillId");
+            if (skillIdObj != null) {
+                if (skillIdObj instanceof Number) {
+                    skillId = ((Number) skillIdObj).longValue();
+                } else if (skillIdObj instanceof String) {
+                    skillId = Long.parseLong((String) skillIdObj);
+                }
+            }
+
+            // Extract proficiencyLevelId - handle both String and Number
+            Long proficiencyLevelId = null;
+            Object profLevelObj = skillData.get("proficiencyLevelId");
+            if (profLevelObj != null) {
+                if (profLevelObj instanceof Number) {
+                    proficiencyLevelId = ((Number) profLevelObj).longValue();
+                } else if (profLevelObj instanceof String) {
+                    proficiencyLevelId = Long.parseLong((String) profLevelObj);
+                }
+            }
+
+            // Extract yearsOfExperience if provided
+            BigDecimal yearsOfExperience = null;
+            if (skillData.containsKey("yearsOfExperience") && skillData.get("yearsOfExperience") != null) {
+                Object yearsObj = skillData.get("yearsOfExperience");
+                if (yearsObj instanceof Number) {
+                    yearsOfExperience = new BigDecimal(((Number) yearsObj).doubleValue());
+                } else if (yearsObj instanceof String) {
+                    yearsOfExperience = new BigDecimal((String) yearsObj);
+                }
+            }
 
             CandidateSkills candidateSkill = candidateService.addCandidateSkill(candidateId, skillId,
-                    proficiencyLevelId);
+                    proficiencyLevelId, yearsOfExperience);
             return ResponseEntity.status(HttpStatus.CREATED).body(candidateSkill);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
@@ -216,12 +248,45 @@ public class CandidateController {
         return ResponseEntity.ok(cvs);
     }
 
+    // Get my (current candidate's) skills
+    @GetMapping("/me/skills")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getMySkills(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            List<CandidateSkills> skills = candidateService.getCandidateSkills(candidate.getCandidateId());
+            return ResponseEntity.ok(skills);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get skills: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
     // Get candidate's skills
     @GetMapping("/{candidateId}/skills")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','VIEWER')")
     public ResponseEntity<List<CandidateSkills>> getCandidateSkills(@PathVariable Long candidateId) {
         List<CandidateSkills> skills = candidateService.getCandidateSkills(candidateId);
         return ResponseEntity.ok(skills);
+    }
+
+    // Delete candidate's skill
+    @DeleteMapping("/skills/{candidateSkillId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    public ResponseEntity<?> deleteCandidateSkill(@PathVariable Long candidateSkillId) {
+        try {
+            candidateService.deleteCandidateSkillById(candidateSkillId);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Skill deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to delete skill: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     // Link a candidate to a position (create application)
@@ -308,8 +373,8 @@ public class CandidateController {
                     "email", user.getEmail(),
                     "firstName", user.getFirstName(),
                     "lastName", user.getLastName(),
-                    "requiresPasswordChange", user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange()
-            ));
+                    "requiresPasswordChange",
+                    user.getRequiresPasswordChange() != null && user.getRequiresPasswordChange()));
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -462,9 +527,9 @@ public class CandidateController {
 
             // Get all open positions
             List<JobPosition> openPositions = jobRepository.findAll().stream()
-                    .filter(pos -> pos.getStatus() != null && 
-                            (pos.getStatus().name().equals("OPEN") || 
-                             pos.getStatus().name().equals("HOLD")))
+                    .filter(pos -> pos.getStatus() != null &&
+                            (pos.getStatus().name().equals("OPEN") ||
+                                    pos.getStatus().name().equals("HOLD")))
                     .collect(Collectors.toList());
 
             // Get positions where candidate has already applied
@@ -496,6 +561,107 @@ public class CandidateController {
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
             error.put("error", "Failed to get available positions: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/me/cvs")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> getMyCVs(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            List<CandidateCV> cvs = candidateService.getCandidateCVs(candidate.getCandidateId());
+            return ResponseEntity.ok(cvs);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to get CVs: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @PostMapping("/me/cv")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> uploadMyCV(Authentication authentication,
+            @RequestParam(required = false) Long positionId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            Map<String, Object> result = candidateService.uploadCV(candidate.getCandidateId(), positionId, file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(result);
+        } catch (IOException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to upload CV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to upload CV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @DeleteMapping("/me/cvs/{cvId}")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> deleteMyCV(Authentication authentication, @PathVariable Long cvId) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            // Verify the CV belongs to this candidate
+            CandidateCV cv = candidateCVRepository.findById(cvId)
+                    .orElseThrow(() -> new RuntimeException("CV not found"));
+
+            if (!cv.getCandidate().getCandidateId().equals(candidate.getCandidateId())) {
+                throw new RuntimeException("You can only delete your own CVs");
+            }
+
+            candidateCVRepository.deleteById(cvId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "CV deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to delete CV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    @GetMapping("/me/cvs/{cvId}/download")
+    @PreAuthorize("hasRole('CANDIDATE')")
+    public ResponseEntity<?> downloadMyCV(Authentication authentication, @PathVariable Long cvId) {
+        try {
+            String email = authentication.getName();
+            Candidate candidate = candidateRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+
+            // Verify the CV belongs to this candidate
+            CandidateCV cv = candidateCVRepository.findById(cvId)
+                    .orElseThrow(() -> new RuntimeException("CV not found"));
+
+            if (!cv.getCandidate().getCandidateId().equals(candidate.getCandidateId())) {
+                throw new RuntimeException("You can only download your own CVs");
+            }
+
+            // Return the cloudUrl or cvFilePath for download
+            String downloadUrl = cv.getCloudUrl() != null ? cv.getCloudUrl() : cv.getCvFilePath();
+            if (downloadUrl == null || downloadUrl.isEmpty()) {
+                throw new RuntimeException("CV download URL not found");
+            }
+
+            Map<String, String> response = new HashMap<>();
+            response.put("downloadUrl", downloadUrl);
+            response.put("fileName", cv.getFileName() != null ? cv.getFileName() : "CV_" + cvId + ".pdf");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to download CV: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }

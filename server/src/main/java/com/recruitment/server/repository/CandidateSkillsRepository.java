@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CandidateSkillsRepository extends JpaRepository<CandidateSkills, Long> {
@@ -21,4 +22,8 @@ public interface CandidateSkillsRepository extends JpaRepository<CandidateSkills
     List<CandidateSkills> findBySkill_SkillId(@Param("skillId") Long skillId);
 
     List<CandidateSkills> findByCandidate_CandidateIdIn(List<Long> candidateIds);
+
+    @Query("SELECT cs FROM CandidateSkills cs WHERE cs.candidate.candidateId = :candidateId AND cs.skill.skillId = :skillId")
+    Optional<CandidateSkills> findByCandidate_CandidateIdAndSkill_SkillId(@Param("candidateId") Long candidateId,
+            @Param("skillId") Long skillId);
 }

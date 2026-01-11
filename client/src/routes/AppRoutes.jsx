@@ -55,9 +55,11 @@ import OffersPage from "../pages/offers/OffersPage";
 import ReportsDashboard from "../pages/reports/ReportsDashboard";
 import ReportsPage from "../pages/reports/ReportsPage";
 
+// Notifications
+import NotificationsPage from "../pages/notifications/NotificationsPage";
+
 // Admin Pages
 import UserManagement from "../pages/admin/UserManagement";
-
 
 const AppRoutes = () => {
   return (
@@ -67,7 +69,10 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/candidate/login" element={<CandidateLogin />} />
-      <Route path="/candidate/reset-password" element={<CandidatePasswordReset />} />
+      <Route
+        path="/candidate/reset-password"
+        element={<CandidatePasswordReset />}
+      />
 
       {/* Dashboards */}
       <Route
@@ -389,6 +394,16 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <ReportsDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Notifications */}
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

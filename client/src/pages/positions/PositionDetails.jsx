@@ -24,8 +24,12 @@ const PositionDetails = () => {
   const navigate = useNavigate();
   const paramId = id || positionId;
   const { currentUser } = useSelector((state) => state.user);
-  const { currentPosition, loading: positionLoading } = useSelector((state) => state.position);
-  const { applications, loading: applicationLoading } = useSelector((state) => state.application);
+  const { currentPosition, loading: positionLoading } = useSelector(
+    (state) => state.position
+  );
+  const { applications, loading: applicationLoading } = useSelector(
+    (state) => state.application
+  );
   const userRole = currentUser?.role?.toUpperCase();
   const isCandidate = userRole === "CANDIDATE";
 

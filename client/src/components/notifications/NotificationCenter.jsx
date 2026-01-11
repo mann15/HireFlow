@@ -11,7 +11,9 @@ import { showError, showSuccess } from "../../utils/toastUtils";
 
 const NotificationCenter = () => {
   const dispatch = useDispatch();
-  const { notifications, unreadCount, loading } = useSelector((state) => state.notification);
+  const { notifications, unreadCount, loading } = useSelector(
+    (state) => state.notification
+  );
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {

@@ -36,7 +36,10 @@ const PositionsList = () => {
     return (
       <div className="container mx-auto p-6 mt-20">
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--primary-color)' }}></div>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2"
+            style={{ borderColor: "var(--primary-color)" }}
+          ></div>
         </div>
       </div>
     );
@@ -55,7 +58,7 @@ const PositionsList = () => {
           <Link
             to="/positions/add"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ backgroundColor: 'var(--primary-color)' }}
+            style={{ backgroundColor: "var(--primary-color)" }}
           >
             <svg
               className="h-5 w-5 mr-2"
@@ -125,7 +128,10 @@ const PositionsList = () => {
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search by title, description, or department"
                   className="w-full border border-gray-300 rounded-md shadow-sm pl-10 pr-4 py-2"
-                  style={{ '--tw-ring-color': 'var(--primary-color)', borderColor: 'var(--border-color, #d1d5db)' }}
+                  style={{
+                    "--tw-ring-color": "var(--primary-color)",
+                    borderColor: "var(--border-color, #d1d5db)",
+                  }}
                 />
               </div>
             </div>
@@ -138,7 +144,10 @@ const PositionsList = () => {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2"
-                style={{ '--tw-ring-color': 'var(--primary-color)', borderColor: 'var(--border-color, #d1d5db)' }}
+                style={{
+                  "--tw-ring-color": "var(--primary-color)",
+                  borderColor: "var(--border-color, #d1d5db)",
+                }}
               >
                 <option value="all">All Status</option>
                 <option value="open">Open</option>
@@ -155,7 +164,10 @@ const PositionsList = () => {
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
                 className="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2"
-                style={{ '--tw-ring-color': 'var(--primary-color)', borderColor: 'var(--border-color, #d1d5db)' }}
+                style={{
+                  "--tw-ring-color": "var(--primary-color)",
+                  borderColor: "var(--border-color, #d1d5db)",
+                }}
               >
                 <option value="all">All Departments</option>
                 {departments.map((dept) => (
@@ -231,7 +243,7 @@ const PositionsList = () => {
                 <Link
                   to="/positions/add"
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  style={{ backgroundColor: 'var(--primary-color)' }}
+                  style={{ backgroundColor: "var(--primary-color)" }}
                 >
                   <svg
                     className="h-5 w-5 mr-2"

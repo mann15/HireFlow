@@ -67,7 +67,7 @@ public class JobPositionController {
                 String email = authentication.getName();
                 User currentUser = userRepository.findByEmail(email)
                         .orElse(null);
-                
+
                 if (currentUser != null) {
                     String roleName = currentUser.getRole().getRoleName();
                     // Apply role-based filtering for REVIEWER and RECRUITER
@@ -92,14 +92,14 @@ public class JobPositionController {
         if (job.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        
+
         // Check role-based access for authenticated users
         if (authentication != null && authentication.isAuthenticated()) {
             try {
                 String email = authentication.getName();
                 User currentUser = userRepository.findByEmail(email)
                         .orElse(null);
-                
+
                 if (currentUser != null) {
                     String roleName = currentUser.getRole().getRoleName();
                     // Check access for REVIEWER and RECRUITER
@@ -115,7 +115,7 @@ public class JobPositionController {
                 // If there's an error, allow access (for public/unauthenticated access)
             }
         }
-        
+
         return ResponseEntity.ok(job.get());
     }
 
@@ -210,7 +210,7 @@ public class JobPositionController {
                 String email = authentication.getName();
                 User currentUser = userRepository.findByEmail(email)
                         .orElseThrow(() -> new RuntimeException("User not found"));
-                
+
                 String roleName = currentUser.getRole().getRoleName();
                 // Check access for REVIEWER and RECRUITER
                 if (roleName.equals("REVIEWER") || roleName.equals("RECRUITER")) {

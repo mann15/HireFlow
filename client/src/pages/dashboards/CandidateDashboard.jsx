@@ -10,8 +10,13 @@ import {
   FaSpinner,
   FaUpload,
   FaEye,
+  FaDownload,
+  FaTrash,
 } from "react-icons/fa";
 import api from "../../api/axios";
+import CandidateCVUpload from "../../components/candidates/CandidateCVUpload";
+import AddSkillsModal from "../../components/candidates/AddSkillsModal";
+import { candidateService } from "../../services/candidateService";
 import {
   getMyOffers,
   acceptOffer,
@@ -39,6 +44,11 @@ const CandidateDashboard = () => {
     offerId: null,
   });
   const [rejectReason, setRejectReason] = useState("");
+  const [cvs, setCvs] = useState([]);
+  const [showCVUpload, setShowCVUpload] = useState(false);
+  const [showAddSkills, setShowAddSkills] = useState(false);
+  const [cvLoading, setCvLoading] = useState(false);
+  const [candidateSkills, setCandidateSkills] = useState([]);
 
   useEffect(() => {
     fetchCandidateData();
@@ -51,6 +61,7 @@ const CandidateDashboard = () => {
       // Fetch candidate profile
       const profileRes = await api.get("/candidates/me");
       setCandidate(profileRes.data.candidate);
+      const candidateId = profileRes.data.candidate?.candidateId;
 
       // Fetch applications
       const applicationsRes = await api.get("/candidates/me/applications");
@@ -60,9 +71,36 @@ const CandidateDashboard = () => {
       const positionsRes = await api.get("/candidates/me/available-positions");
       setAvailablePositions(positionsRes.data.positions || []);
 
+      // Fetch candidate skills - use /me endpoint for current candidate
+      try {
+        let skillsRes = await candidateService.getCandidateSkills();
+        // Handle different response formats
+        if (Array.isArray(skillsRes)) {
+          setCandidateSkills(skillsRes);
+        } else if (skillsRes?.data && Array.isArray(skillsRes.data)) {
+          setCandidateSkills(skillsRes.data);
+        } else if (skillsRes?.skills && Array.isArray(skillsRes.skills)) {
+          setCandidateSkills(skillsRes.skills);
+        } else {
+          setCandidateSkills([]);
+        }
+      } catch (err) {
+        console.error("Error fetching candidate skills:", err);
+        setCandidateSkills([]);
+      }
+
       // Fetch my offers
       const offersRes = await getMyOffers();
       setOffers(offersRes || []);
+
+      // Fetch CVs
+      try {
+        const cvsRes = await candidateService.getCandidateCVs();
+        setCvs(Array.isArray(cvsRes) ? cvsRes : []);
+      } catch (err) {
+        console.error("Error fetching CVs:", err);
+        setCvs([]);
+      }
     } catch (error) {
       console.error("Error fetching candidate data:", error);
     } finally {
@@ -169,13 +207,56 @@ const CandidateDashboard = () => {
     if (!candidate) return;
 
     try {
+      const latestCvId = cvs && cvs.length > 0 ? cvs[0].cvId : null;
       await api.post(`/candidates/${candidate.candidateId}/apply`, {
         positionId,
+        cvId: latestCvId,
       });
       showSuccess("Application submitted successfully!");
       fetchCandidateData(); // Refresh data
     } catch (error) {
       showError(getErrorMessage(error, "Failed to submit application"));
+    }
+  };
+
+  const handleCVUploadComplete = async () => {
+    // Refresh CVs after upload
+    try {
+      const cvsRes = await candidateService.getCandidateCVs();
+      setCvs(Array.isArray(cvsRes) ? cvsRes : []);
+      setShowCVUpload(false);
+    } catch (err) {
+      console.error("Error fetching CVs:", err);
+    }
+  };
+
+  const handleDeleteCV = async (cvId) => {
+    if (!window.confirm("Are you sure you want to delete this CV?")) return;
+
+    try {
+      setCvLoading(true);
+      await api.delete(`/candidates/me/cvs/${cvId}`);
+      showSuccess("CV deleted successfully");
+      // Refresh CVs
+      const cvsRes = await candidateService.getCandidateCVs();
+      setCvs(Array.isArray(cvsRes) ? cvsRes : []);
+    } catch (error) {
+      showError(getErrorMessage(error, "Failed to delete CV"));
+    } finally {
+      setCvLoading(false);
+    }
+  };
+
+  const handleDownloadCV = async (cvId, filename) => {
+    try {
+      const response = await api.get(`/candidates/me/cvs/${cvId}/download`);
+      const downloadUrl = response.data.downloadUrl;
+      const fileName = response.data.fileName || filename || `CV_${cvId}.pdf`;
+
+      // Open the download URL in a new tab
+      window.open(downloadUrl, "_blank");
+    } catch (error) {
+      showError(getErrorMessage(error, "Failed to download CV"));
     }
   };
 
@@ -391,6 +472,206 @@ const CandidateDashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* CV Management Section */}
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">My CVs</h3>
+              </div>
+
+              {/* CV Upload Component */}
+              {showCVUpload && cvs.length === 0 && (
+                <div className="mb-6">
+                  <CandidateCVUpload
+                    candidateId={candidate.candidateId}
+                    onUploadComplete={handleCVUploadComplete}
+                  />
+                </div>
+              )}
+
+              {/* List of uploaded CVs */}
+              {cvLoading ? (
+                <div className="flex justify-center py-8">
+                  <FaSpinner className="animate-spin text-2xl text-indigo-600" />
+                </div>
+              ) : cvs.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <FaFileAlt className="mx-auto h-10 w-10 text-gray-400 mb-2" />
+                  <p className="text-gray-600 mb-4">No CVs uploaded yet.</p>
+                  {!showCVUpload && (
+                    <button
+                      onClick={() => setShowCVUpload(true)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm inline-flex items-center"
+                    >
+                      <FaUpload className="mr-2" />
+                      Upload Your First CV
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cvs.map((cv) => (
+                    <div
+                      key={cv.cvId}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start space-x-3 flex-1">
+                          <FaFileAlt className="text-indigo-600 text-xl mt-1" />
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">
+                              {cv.candidate.firstName || `CV`}
+                            </h4>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Uploaded:{" "}
+                              {new Date(
+                                cv.uploadedAt || cv.cvId
+                              ).toLocaleDateString()}
+                            </p>
+                            {cv.parsedContent && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Parsed and processed
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() =>
+                              handleDownloadCV(cv.cvId, cv.filename)
+                            }
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Download CV"
+                          >
+                            <FaDownload />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCV(cv.cvId)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete CV"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Skills for Screening Verification */}
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Skills for Screening Verification
+                </h3>
+                {candidateSkills.length > 0 && (
+                  <button
+                    onClick={() => setShowAddSkills(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  >
+                    + Add More Skills
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mb-4">
+                Add skills in your profile so reviewers can verify them during
+                CV review.
+              </p>
+
+              {candidateSkills.length === 0 ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 bg-gray-50 text-center">
+                  <p className="text-sm text-gray-600 font-medium mb-2">
+                    No skills added yet
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Add skills from your profile so reviewers can verify them
+                    during CV review.
+                  </p>
+                  <button
+                    onClick={() => setShowAddSkills(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Add the first skill
+                  </button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-3">
+                  {candidateSkills.map((skill) => (
+                    <div
+                      key={skill.id || skill.skillId}
+                      className="border border-gray-200 rounded-lg p-4 flex items-start justify-between hover:shadow-md transition duration-200"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">
+                          {skill.skill.skillName}
+                        </p>
+                        {skill.proficiencyLevel && (
+                          <p className="text-sm text-gray-600">
+                            Proficiency:{" "}
+                            {typeof skill.proficiencyLevel === "object"
+                              ? skill.proficiencyLevel.levelName
+                              : skill.proficiencyLevel}
+                          </p>
+                        )}
+                        {skill.yearsOfExperience !== undefined &&
+                          skill.yearsOfExperience !== null && (
+                            <p className="text-sm text-gray-600">
+                              Experience: {skill.yearsOfExperience} yrs
+                            </p>
+                          )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
+                        {skill.verified && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium whitespace-nowrap">
+                            ✓ Verified
+                          </span>
+                        )}
+                        <button
+                          onClick={async () => {
+                            if (
+                              window.confirm(
+                                "Are you sure you want to delete this skill?"
+                              )
+                            ) {
+                              try {
+                                // Optimistic UI: remove locally first
+                                setCandidateSkills((prev) =>
+                                  prev.filter(
+                                    (s) => s.id !== (skill.id || skill.skillId)
+                                  )
+                                );
+                                // Call API to delete by CandidateSkills.id
+                                await candidateService.deleteCandidateSkill(
+                                  skill.id || skill.skillId
+                                );
+                                showSuccess("Skill deleted successfully");
+                                // Ensure state matches server
+                                await fetchCandidateData();
+                              } catch (error) {
+                                showError(
+                                  getErrorMessage(
+                                    error,
+                                    "Failed to delete skill"
+                                  )
+                                );
+                                // Restore list from server on failure
+                                await fetchCandidateData();
+                              }
+                            }
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Skill"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -400,6 +681,32 @@ const CandidateDashboard = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               My Applications
             </h2>
+
+            {/* CV Warning Banner */}
+            {cvs.length === 0 && (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <FaClock className="text-yellow-600 text-xl mt-1 mr-3" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-yellow-800 mb-1">
+                      CV Required for Screening
+                    </h4>
+                    <p className="text-sm text-yellow-700 mb-2">
+                      Your application cannot be moved to the screening stage
+                      without a CV. Please upload your CV in the Profile tab.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("profile")}
+                      className="text-sm bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 flex items-center"
+                    >
+                      <FaUpload className="mr-2" />
+                      Go to Profile & Upload CV
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {applications.length === 0 ? (
               <div className="text-center py-12">
                 <FaBriefcase className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -480,6 +787,30 @@ const CandidateDashboard = () => {
                       >
                         <FaEye className="mr-2" /> View Details
                       </button>
+                      {!app.cv &&
+                        cvs.length > 0 &&
+                        (app.status === "APPLIED" ||
+                          app.status === "ON_HOLD") && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const latestCvId = cvs[0].cvId;
+                                await api.put(
+                                  `/applications/${app.applicationId}/attach-cv/${latestCvId}`
+                                );
+                                showSuccess("CV attached to application");
+                                fetchCandidateData();
+                              } catch (err) {
+                                showError(
+                                  getErrorMessage(err, "Failed to attach CV")
+                                );
+                              }
+                            }}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center"
+                          >
+                            <FaUpload className="mr-2" /> Attach CV
+                          </button>
+                        )}
                       {canUploadDocuments(app.status) && (
                         <button
                           onClick={() =>
@@ -616,6 +947,33 @@ const CandidateDashboard = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
               Available Positions
             </h2>
+
+            {/* CV Recommendation Banner */}
+            {cvs.length === 0 && (
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <FaFileAlt className="text-blue-600 text-xl mt-1 mr-3" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-blue-800 mb-1">
+                      Upload Your CV First
+                    </h4>
+                    <p className="text-sm text-blue-700 mb-2">
+                      To improve your application process and speed up
+                      screening, we recommend uploading your CV before applying
+                      to positions.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("profile")}
+                      className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                    >
+                      <FaUpload className="mr-2" />
+                      Upload CV Now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {availablePositions.length === 0 ? (
               <div className="text-center py-12">
                 <FaFileAlt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -922,6 +1280,19 @@ const CandidateDashboard = () => {
           placeholder="Reason for rejection"
         />
       </ConfirmationModal>
+
+      {/* Add Skills Modal */}
+      {candidate && (
+        <AddSkillsModal
+          candidateId={candidate.candidateId}
+          isOpen={showAddSkills}
+          onClose={() => setShowAddSkills(false)}
+          onSkillAdded={() => {
+            setShowAddSkills(false);
+            fetchCandidateData();
+          }}
+        />
+      )}
     </div>
   );
 };

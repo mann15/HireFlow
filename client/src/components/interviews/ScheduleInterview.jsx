@@ -4,6 +4,7 @@ import {
   getInterviewRounds,
 } from "../../services/interviewService";
 import { checkCandidateHistory } from "../../services/reviewService";
+import { userService } from "../../services/apiService";
 import {
   getErrorMessage,
   showError,
@@ -15,6 +16,7 @@ const ScheduleInterview = ({
   positionId,
   candidateName,
   onComplete,
+  onClose,
 }) => {
   const [rounds, setRounds] = useState([]);
   const [notification, setNotification] = useState(null);
@@ -28,7 +30,8 @@ const ScheduleInterview = ({
     location: "",
     panelistIds: [],
   });
-  const [panelists, setPanelists] = useState([{ id: "" }]);
+  const [panelists, setPanelists] = useState([]);
+  const [availableInterviewers, setAvailableInterviewers] = useState([]);
   const [useCustomRound, setUseCustomRound] = useState(false);
   const [customRound, setCustomRound] = useState({
     roundName: "Custom Round",
@@ -63,7 +66,15 @@ const ScheduleInterview = ({
     if (applicationId) {
       checkForPreviousHistory();
     }
+    fetchInterviewers();
   }, [positionId, applicationId]);
+
+  // Keep applicationId in form data in sync with prop
+  useEffect(() => {
+    if (applicationId) {
+      setFormData((prev) => ({ ...prev, applicationId }));
+    }
+  }, [applicationId]);
 
   const checkForPreviousHistory = async () => {
     try {
@@ -87,23 +98,41 @@ const ScheduleInterview = ({
     try {
       const data = await getInterviewRounds(positionId);
       setRounds(data);
+      if (!data || data.length === 0) {
+        setUseCustomRound(true);
+      }
     } catch (err) {
       console.error("Failed to fetch rounds:", err);
+      setUseCustomRound(true);
     }
   };
 
-  const addPanelist = () => {
-    setPanelists([...panelists, { id: "" }]);
+  const fetchInterviewers = async () => {
+    try {
+      const users = await userService.getUsers();
+      const eligible = (users || []).filter((u) =>
+        [
+          "INTERVIEWER",
+          "REVIEWER",
+          "HR",
+          "RECRUITER",
+          "ADMIN",
+          "SUPER_ADMIN",
+        ].includes(u.role?.roleName)
+      );
+      setAvailableInterviewers(eligible);
+    } catch (err) {
+      console.error("Failed to load interviewers:", err);
+      setAvailableInterviewers([]);
+    }
   };
 
-  const removePanelist = (index) => {
-    setPanelists(panelists.filter((_, i) => i !== index));
-  };
-
-  const updatePanelist = (index, value) => {
-    const newPanelists = [...panelists];
-    newPanelists[index].id = value;
-    setPanelists(newPanelists);
+  const togglePanelist = (userId) => {
+    if (panelists.includes(userId)) {
+      setPanelists(panelists.filter((id) => id !== userId));
+    } else {
+      setPanelists([...panelists, userId]);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -113,8 +142,12 @@ const ScheduleInterview = ({
     setOnlineAssessmentStatus("");
 
     try {
+      if (!formData.applicationId) {
+        throw new Error("applicationId is required");
+      }
+
       const panelistIds = panelists
-        .map((p) => parseInt(p.id))
+        .map((id) => parseInt(id))
         .filter((id) => !isNaN(id) && id > 0);
 
       const dateTime = `${formData.interviewDate}T${formData.interviewTime}:00`;
@@ -132,7 +165,7 @@ const ScheduleInterview = ({
         : undefined;
 
       const payload = {
-        applicationId: formData.applicationId,
+        applicationId: Number(formData.applicationId),
         roundId: useCustomRound ? null : parseInt(formData.roundId),
         customRound: useCustomRound
           ? {
@@ -172,7 +205,17 @@ const ScheduleInterview = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6 relative">
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      )}
       <h2 className="text-2xl font-bold mb-4">Schedule Interview</h2>
       {candidateName && (
         <p className="text-gray-600 mb-6">Candidate: {candidateName}</p>
@@ -249,21 +292,28 @@ const ScheduleInterview = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Interview Round *
               </label>
-              <select
-                value={formData.roundId}
-                onChange={(e) =>
-                  setFormData({ ...formData, roundId: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                required
-              >
-                <option value="">Select Round</option>
-                {rounds.map((round) => (
-                  <option key={round.id} value={round.id}>
-                    {round.roundName} - {round.roundType}
-                  </option>
-                ))}
-              </select>
+              {rounds.length === 0 ? (
+                <div className="text-sm text-gray-600 bg-gray-50 border border-dashed border-gray-300 rounded-md px-3 py-2">
+                  No defined rounds for this position. Switching to custom
+                  round.
+                </div>
+              ) : (
+                <select
+                  value={formData.roundId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, roundId: e.target.value })
+                  }
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
+                  required
+                >
+                  <option value="">Select Round</option>
+                  {rounds.map((round) => (
+                    <option key={round.id} value={round.id}>
+                      {round.roundName} - {round.roundType}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -422,35 +472,60 @@ const ScheduleInterview = ({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Interviewers/Panelists
             </label>
-            {panelists.map((panelist, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <input
-                  type="number"
-                  value={panelist.id}
-                  onChange={(e) => updatePanelist(index, e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="Interviewer User ID"
-                  min="1"
-                />
-                {panelists.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removePanelist(index)}
-                    className="px-3 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-                  >
-                    Remove
-                  </button>
-                )}
+            {availableInterviewers.length === 0 ? (
+              <p className="text-sm text-gray-600">
+                No interviewers available to select.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {panelists.map((id) => {
+                    const user = availableInterviewers.find(
+                      (u) => u.userId === id
+                    );
+                    return (
+                      <span
+                        key={id}
+                        className="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs"
+                      >
+                        {user
+                          ? `${user.firstName} ${user.lastName}`
+                          : `User ${id}`}
+                        <button
+                          type="button"
+                          onClick={() => togglePanelist(id)}
+                          className="text-indigo-500 hover:text-indigo-700"
+                          aria-label="Remove interviewer"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="border border-gray-200 rounded-lg p-3 max-h-48 overflow-y-auto">
+                  {availableInterviewers.map((user) => (
+                    <label
+                      key={user.userId}
+                      className="flex items-center gap-2 py-1 text-sm text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={panelists.includes(user.userId)}
+                        onChange={() => togglePanelist(user.userId)}
+                      />
+                      <span className="font-medium">
+                        {user.firstName} {user.lastName}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({user.role?.roleName || ""})
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={addPanelist}
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              + Add Another Interviewer
-            </button>
-            {panelists.filter((p) => p.id).length > 1 && (
+            )}
+            {panelists.length > 1 && (
               <p className="text-xs text-gray-500 mt-2">
                 Panel interview detected — multiple interviewers will be invited
                 and can score simultaneously.
@@ -534,7 +609,7 @@ const ScheduleInterview = ({
                     })
                   }
                 />
-                Schedule an online examination (informational only)
+                Schedule an online examination
               </label>
             </div>
 
@@ -599,12 +674,6 @@ const ScheduleInterview = ({
                   />
                 </div>
               </div>
-            )}
-            {!onlineAssessment.enabled && (
-              <p className="text-xs text-gray-500">
-                Toggle on to record that an online test is scheduled before the
-                interview (no exam action is performed).
-              </p>
             )}
           </div>
         </div>

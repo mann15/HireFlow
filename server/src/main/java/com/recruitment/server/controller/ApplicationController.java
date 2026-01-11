@@ -48,15 +48,15 @@ public class ApplicationController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+
             String roleName = currentUser.getRole().getRoleName();
             List<JobApplication> applications;
 
             // Apply role-based filtering for REVIEWER, INTERVIEWER, and RECRUITER
             // HR, ADMIN, SUPER_ADMIN, and VIEWER can see all applications
-            boolean needsRoleFiltering = roleName.equals("REVIEWER") || 
-                                       roleName.equals("INTERVIEWER") || 
-                                       roleName.equals("RECRUITER");
+            boolean needsRoleFiltering = roleName.equals("REVIEWER") ||
+                    roleName.equals("INTERVIEWER") ||
+                    roleName.equals("RECRUITER");
 
             if (positionId != null) {
                 applications = applicationService.getApplicationsByPosition(positionId);
@@ -99,7 +99,7 @@ public class ApplicationController {
     }
 
     @GetMapping("/{applicationId}")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','REVIEWER','INTERVIEWER','VIEWER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','REVIEWER','INTERVIEWER','VIEWER','CANDIDATE')")
     public ResponseEntity<?> getApplicationById(@PathVariable Long applicationId,
             Authentication authentication) {
         try {
@@ -107,15 +107,15 @@ public class ApplicationController {
             String email = authentication.getName();
             User currentUser = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            
+
             JobApplication application = applicationService.getApplicationById(applicationId);
-            
+
             // Check if user has access to this application
             if (!applicationService.hasAccessToApplication(currentUser, application)) {
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "You do not have access to this application"));
             }
-            
+
             return ResponseEntity.ok(application);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -179,14 +179,26 @@ public class ApplicationController {
     }
 
     @PutMapping("/{applicationId}/move-to-screening")
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
     public ResponseEntity<?> moveToScreening(@PathVariable Long applicationId,
+            Authentication authentication) {
+        User updatedBy = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new com.recruitment.server.exception.ResourceNotFoundException("User not found"));
+
+        JobApplication application = applicationService.moveToScreening(applicationId, updatedBy);
+        return ResponseEntity.ok(application);
+    }
+
+    @PutMapping("/{applicationId}/attach-cv/{cvId}")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    public ResponseEntity<?> attachCvToApplication(@PathVariable Long applicationId,
+            @PathVariable Long cvId,
             Authentication authentication) {
         try {
             User updatedBy = userRepository.findByEmail(authentication.getName())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            JobApplication application = applicationService.moveToScreening(applicationId, updatedBy);
+                    .orElseThrow(
+                            () -> new com.recruitment.server.exception.ResourceNotFoundException("User not found"));
+            JobApplication application = applicationService.attachCvToApplication(applicationId, cvId, updatedBy);
             return ResponseEntity.ok(application);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

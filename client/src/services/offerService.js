@@ -17,7 +17,11 @@ export const getOfferById = async (offerId) => {
 // Get offers by application
 export const getOffersByApplication = async (applicationId) => {
   // Validate applicationId
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
   const response = await api.get(`${BASE}/application/${applicationId}`);

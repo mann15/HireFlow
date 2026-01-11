@@ -21,7 +21,11 @@ export const getDocumentTypes = async () => {
 // Get documents by application
 export const getDocumentsByApplication = async (applicationId) => {
   // Validate applicationId
-  if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+  if (
+    !applicationId ||
+    applicationId === "undefined" ||
+    applicationId === "null"
+  ) {
     throw new Error("Invalid application ID");
   }
   const response = await api.get(`${BASE}/application/${applicationId}`);
@@ -42,8 +46,9 @@ export const getPendingDocuments = async () => {
 
 // Verify document
 export const verifyDocument = async (documentId, status, remarks) => {
-  const response = await api.put(`${BASE}/${documentId}/verify`, null, {
-    params: { status, remarks },
+  const response = await api.put(`${BASE}/${documentId}/verify`, {
+    status,
+    remarks,
   });
   return response.data;
 };

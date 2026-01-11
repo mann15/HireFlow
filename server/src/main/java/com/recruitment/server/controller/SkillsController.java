@@ -3,11 +3,14 @@ package com.recruitment.server.controller;
 import com.recruitment.server.model.Skills;
 import com.recruitment.server.service.SkillsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/skills")
@@ -33,9 +36,27 @@ public class SkillsController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
-    public Skills createSkill(@RequestBody Skills skill) {
-        return skillsService.createSkill(skill);
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    public ResponseEntity<?> createSkill(@RequestBody Skills skill) {
+        try {
+            if (skill.getSkillName() == null || skill.getSkillName().trim().isEmpty()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Skill name is required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            }
+
+            Skills created = skillsService.createSkill(skill);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            String message = e.getMessage();
+            if (message != null && message.contains("unique")) {
+                error.put("error", "A skill with this name already exists");
+            } else {
+                error.put("error", "Failed to create skill: " + message);
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
     }
 
     @PutMapping("/{skillId}")

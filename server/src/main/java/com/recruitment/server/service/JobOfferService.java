@@ -23,9 +23,9 @@ public class JobOfferService {
     private final UserRepository userRepository;
 
     public JobOffers generateOffer(Long applicationId, BigDecimal salaryOffered,
-            String offeredDesignation, LocalDate joiningDate, 
+            String offeredDesignation, LocalDate joiningDate,
             LocalDate offerValidTill, User createdBy) {
-        
+
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
@@ -105,13 +105,12 @@ public class JobOfferService {
         // Notify HR and recruiters
         if (application.getPosition().getCreatedBy() != null) {
             notificationService.createNotification(
-                application.getPosition().getCreatedBy(),
-                "Offer accepted by " + application.getCandidate().getFirstName() + 
-                " " + application.getCandidate().getLastName(),
-                Notification.NotificationType.SUCCESS,
-                Notification.NotificationCategory.OFFER_GENERATED,
-                offerId
-            );
+                    application.getPosition().getCreatedBy(),
+                    "Offer accepted by " + application.getCandidate().getFirstName() +
+                            " " + application.getCandidate().getLastName(),
+                    Notification.NotificationType.SUCCESS,
+                    Notification.NotificationCategory.OFFER_GENERATED,
+                    offerId);
         }
 
         return updated;

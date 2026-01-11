@@ -1,12 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DefineInterviewRounds from "../../components/interviews/DefineInterviewRounds";
 import ScheduleInterview from "../../components/interviews/ScheduleInterview";
 import BulkInterviewScheduler from "../../components/interviews/BulkInterviewScheduler";
+import SearchableDropdown from "../../components/SearchableDropdown";
+import { getPositions } from "../../services/positionService";
 
 const InterviewManagement = () => {
   const [positionId, setPositionId] = useState("");
   const [applicationId, setApplicationId] = useState("");
   const [candidateName, setCandidateName] = useState("");
+  const [positions, setPositions] = useState([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+
+  // Fetch positions on mount
+  useEffect(() => {
+    const fetchPositions = async () => {
+      setLoadingPositions(true);
+      try {
+        const data = await getPositions();
+        setPositions(data);
+      } catch (error) {
+        console.error("Failed to fetch positions:", error);
+      } finally {
+        setLoadingPositions(false);
+      }
+    };
+    fetchPositions();
+  }, []);
+  console.log(positions);
+  // Transform positions into dropdown options with details
+  const positionOptions = positions.map((pos) => ({
+    value: pos.id,
+    label: `${pos.jobTitle} - ${pos.department || "N/A"} (${
+      pos.employmentType || "N/A"
+    })`,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-6">
@@ -33,15 +61,15 @@ const InterviewManagement = () => {
                 for specific candidates.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-700">Position ID</label>
-              <input
-                type="number"
-                min="1"
+            <div className="w-full md:w-96">
+              <SearchableDropdown
+                options={positionOptions}
                 value={positionId}
-                onChange={(e) => setPositionId(e.target.value)}
-                className="w-36 border border-gray-300 rounded-md px-3 py-2"
-                placeholder="e.g., 12"
+                onChange={setPositionId}
+                label="Position"
+                placeholder="Select a position..."
+                loading={loadingPositions}
+                noOptionsText="No positions available"
               />
             </div>
           </div>
@@ -56,7 +84,7 @@ const InterviewManagement = () => {
         </section>
 
         <section className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
                 Schedule a Single Interview
@@ -66,36 +94,38 @@ const InterviewManagement = () => {
                 examination as scheduled before the interview.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Application ID</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Application ID
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={applicationId}
                   onChange={(e) => setApplicationId(e.target.value)}
-                  className="w-32 border border-gray-300 rounded-md px-3 py-2"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
                   placeholder="e.g., 45"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Position ID</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={positionId}
-                  onChange={(e) => setPositionId(e.target.value)}
-                  className="w-32 border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="e.g., 12"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-700">Candidate Name</label>
+              <SearchableDropdown
+                options={positionOptions}
+                value={positionId}
+                onChange={setPositionId}
+                label="Position"
+                placeholder="Select a position..."
+                loading={loadingPositions}
+                noOptionsText="No positions available"
+              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Candidate Name
+                </label>
                 <input
                   type="text"
                   value={candidateName}
                   onChange={(e) => setCandidateName(e.target.value)}
-                  className="w-48 border border-gray-300 rounded-md px-3 py-2"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2"
                   placeholder="Optional display name"
                 />
               </div>

@@ -736,7 +736,8 @@ public class CandidateService {
         }
 
         // Add skills to candidate
-        public CandidateSkills addCandidateSkill(Long candidateId, Long skillId, Long proficiencyLevelId) {
+        public CandidateSkills addCandidateSkill(Long candidateId, Long skillId, Long proficiencyLevelId,
+                        BigDecimal yearsOfExperience) {
                 Candidate candidate = candidateRepository.findById(candidateId)
                                 .orElseThrow(() -> new RuntimeException("Candidate not found"));
 
@@ -750,9 +751,15 @@ public class CandidateService {
                                 .candidate(candidate)
                                 .skill(skill)
                                 .proficiencyLevel(proficiencyLevel)
+                                .yearsOfExperience(yearsOfExperience)
                                 .build();
 
                 return candidateSkillsRepository.save(candidateSkill);
+        }
+
+        // Delete candidate's skill
+        public void deleteCandidateSkillById(Long candidateSkillId) {
+                candidateSkillsRepository.deleteById(candidateSkillId);
         }
 
         // Get all candidates

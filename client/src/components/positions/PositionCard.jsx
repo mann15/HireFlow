@@ -113,14 +113,14 @@ const PositionCard = ({ position }) => {
               <Link
                 to={`/positions/${position.positionId}/edit`}
                 className="px-3 py-1 text-xs font-medium rounded-md transition-colors duration-150"
-                style={{ color: 'var(--primary-color)' }}
+                style={{ color: "var(--primary-color)" }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--primary-700)';
-                  e.currentTarget.style.backgroundColor = 'var(--primary-50)';
+                  e.currentTarget.style.color = "var(--primary-700)";
+                  e.currentTarget.style.backgroundColor = "var(--primary-50)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--primary-color)';
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = "var(--primary-color)";
+                  e.currentTarget.style.backgroundColor = "transparent";
                 }}
               >
                 Edit
@@ -129,9 +129,13 @@ const PositionCard = ({ position }) => {
             <Link
               to={`/positions/${position.positionId}`}
               className="px-3 py-1 text-xs font-medium text-white rounded-md transition-colors duration-150"
-              style={{ backgroundColor: 'var(--primary-color)' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-color)'}
+              style={{ backgroundColor: "var(--primary-color)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "var(--)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "var(--primary-color)")
+              }
             >
               View Details
             </Link>

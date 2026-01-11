@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { candidateService } from "../../services/candidateService";
 import Loader from "../../components/Loader";
 import CVUpload from "../../components/candidates/CVUpload";
+import AddSkillsModal from "../../components/candidates/AddSkillsModal";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import {
   showError,
@@ -20,6 +21,7 @@ const CandidateDetails = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [showCVUpload, setShowCVUpload] = useState(false);
+  const [showAddSkills, setShowAddSkills] = useState(false);
   const [deactivateModal, setDeactivateModal] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,17 @@ const CandidateDetails = () => {
 
       setCandidate(candidateData);
       setCvs(cvsData);
-      setSkills(skillsData);
+
+      // Handle different response formats for skills
+      if (Array.isArray(skillsData)) {
+        setSkills(skillsData);
+      } else if (skillsData?.data && Array.isArray(skillsData.data)) {
+        setSkills(skillsData.data);
+      } else if (skillsData?.skills && Array.isArray(skillsData.skills)) {
+        setSkills(skillsData.skills);
+      } else {
+        setSkills([]);
+      }
     } catch (err) {
       setError(err.error || "Failed to fetch candidate details");
     } finally {
@@ -386,9 +398,14 @@ const CandidateDetails = () => {
           {activeTab === "skills" && (
             <div className="bg-white rounded-lg shadow-md p-8">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Skills</h2>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-                  Add Skill
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Skills for Screening Verification
+                </h2>
+                <button
+                  onClick={() => setShowAddSkills(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+                >
+                  + Add Skills
                 </button>
               </div>
 
@@ -397,27 +414,61 @@ const CandidateDetails = () => {
                   {skills.map((skill) => (
                     <div
                       key={skill.id}
-                      className="border border-gray-200 rounded-lg p-4"
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200"
                     >
-                      <h3 className="font-medium text-gray-900">
+                      <h3 className="font-medium text-gray-900 mb-2">
                         {skill.skill.skillName}
                       </h3>
-                      <p className="text-sm text-gray-600">
-                        {skill.proficiencyLevel.levelName}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-medium">Level:</span>{" "}
+                          {skill.proficiencyLevel.levelName}
+                        </p>
+                        {skill.yearsOfExperience && (
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Experience:</span>{" "}
+                            {skill.yearsOfExperience} years
+                          </p>
+                        )}
+                        {skill.verified && (
+                          <p className="text-xs text-green-600 font-medium">
+                            ✓ Verified
+                          </p>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">No skills added yet</p>
-                  <button className="text-blue-600 hover:text-blue-700 font-medium">
+                <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                  <p className="text-gray-600 font-medium mb-2">
+                    No skills added yet
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Add skills from your profile so reviewers can verify them
+                    during CV review.
+                  </p>
+                  <button
+                    onClick={() => setShowAddSkills(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
                     Add the first skill
                   </button>
                 </div>
               )}
             </div>
           )}
+
+          {/* Add Skills Modal */}
+          <AddSkillsModal
+            candidateId={candidateId}
+            isOpen={showAddSkills}
+            onClose={() => setShowAddSkills(false)}
+            onSkillAdded={() => {
+              setShowAddSkills(false);
+              fetchCandidateDetails();
+            }}
+          />
 
           {activeTab === "cvs" && (
             <div className="bg-white rounded-lg shadow-md p-8">

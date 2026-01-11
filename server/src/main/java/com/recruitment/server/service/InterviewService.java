@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,7 +31,7 @@ public class InterviewService {
                 .orElseThrow(() -> new RuntimeException("Position not found"));
 
         List<InterviewRound> savedRounds = new ArrayList<>();
-        
+
         for (InterviewRound round : rounds) {
             round.setPosition(position);
             savedRounds.add(interviewRoundRepository.save(round));
@@ -53,15 +54,43 @@ public class InterviewService {
         return interviewRoundRepository.save(round);
     }
 
-    public CandidateInterview scheduleInterview(Long applicationId, Long roundId, 
+    public CandidateInterview scheduleInterview(Long applicationId, Long roundId, Map<String, Object> customRound,
             LocalDateTime interviewDate, CandidateInterview.InterviewMode mode,
             String interviewLink, List<Long> panelistIds, User scheduledBy) {
-        
+
         JobApplication application = jobApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
 
-        InterviewRound round = interviewRoundRepository.findById(roundId)
-                .orElseThrow(() -> new RuntimeException("Interview round not found"));
+        InterviewRound round;
+        if (roundId != null) {
+            round = interviewRoundRepository.findById(roundId)
+                    .orElseThrow(() -> new RuntimeException("Interview round not found"));
+        } else if (customRound != null) {
+            String roundName = customRound.get("roundName") != null ? customRound.get("roundName").toString()
+                    : "Custom Round";
+            String roundTypeStr = customRound.get("roundType") != null ? customRound.get("roundType").toString()
+                    : "TECHNICAL";
+            InterviewRound.RoundType roundType = InterviewRound.RoundType.valueOf(roundTypeStr);
+            Integer duration = customRound.get("durationMinutes") != null
+                    ? Integer.valueOf(customRound.get("durationMinutes").toString())
+                    : 60;
+            String description = customRound.get("description") != null
+                    ? customRound.get("description").toString()
+                    : "Custom round";
+
+            round = InterviewRound.builder()
+                    .position(application.getPosition())
+                    .roundName(roundName)
+                    .roundType(roundType)
+                    .durationMinutes(duration)
+                    .description(description)
+                    .roundOrder(0)
+                    .isMandatory(true)
+                    .build();
+            round = interviewRoundRepository.save(round);
+        } else {
+            throw new RuntimeException("Either roundId or customRound must be provided");
+        }
 
         // Create interview
         CandidateInterview interview = CandidateInterview.builder()
@@ -87,20 +116,19 @@ public class InterviewService {
                         .interview(savedInterview)
                         .panelist(panelist)
                         .build();
-                
+
                 interviewPanelRepository.save(panel);
 
                 // Send notification to panelist
                 notificationService.createNotification(
-                    panelist,
-                    "You have been assigned to interview " + 
-                    application.getCandidate().getFirstName() + " " + 
-                    application.getCandidate().getLastName() +
-                    " on " + interviewDate.toString(),
-                    Notification.NotificationType.INFO,
-                    Notification.NotificationCategory.INTERVIEW_SCHEDULED,
-                    savedInterview.getInterviewId()
-                );
+                        panelist,
+                        "You have been assigned to interview " +
+                                application.getCandidate().getFirstName() + " " +
+                                application.getCandidate().getLastName() +
+                                " on " + interviewDate.toString(),
+                        Notification.NotificationType.INFO,
+                        Notification.NotificationCategory.INTERVIEW_SCHEDULED,
+                        savedInterview.getInterviewId());
             }
         }
 
@@ -113,24 +141,23 @@ public class InterviewService {
         return savedInterview;
     }
 
-    public List<CandidateInterview> scheduleBulkInterviews(List<Long> applicationIds, 
-            Long roundId, LocalDateTime interviewDate, 
+    public List<CandidateInterview> scheduleBulkInterviews(List<Long> applicationIds,
+            Long roundId, LocalDateTime interviewDate,
             CandidateInterview.InterviewMode mode, String interviewLink,
             List<Long> panelistIds, User scheduledBy) {
-        
+
         List<CandidateInterview> scheduledInterviews = new ArrayList<>();
 
         for (Long applicationId : applicationIds) {
             try {
                 CandidateInterview interview = scheduleInterview(
-                    applicationId, roundId, interviewDate, mode, 
-                    interviewLink, panelistIds, scheduledBy
-                );
+                        applicationId, roundId, null, interviewDate, mode,
+                        interviewLink, panelistIds, scheduledBy);
                 scheduledInterviews.add(interview);
             } catch (Exception e) {
                 // Log error and continue with next application
-                System.err.println("Failed to schedule interview for application " + 
-                                 applicationId + ": " + e.getMessage());
+                System.err.println("Failed to schedule interview for application " +
+                        applicationId + ": " + e.getMessage());
             }
         }
 
@@ -150,15 +177,14 @@ public class InterviewService {
         List<InterviewPanel> panels = interviewPanelRepository.findByInterview(interview);
         for (InterviewPanel panel : panels) {
             notificationService.createNotification(
-                panel.getPanelist(),
-                "Interview with " + 
-                interview.getApplication().getCandidate().getFirstName() + " " +
-                interview.getApplication().getCandidate().getLastName() +
-                " has been rescheduled to " + newDate.toString(),
-                Notification.NotificationType.WARNING,
-                Notification.NotificationCategory.INTERVIEW_SCHEDULED,
-                interviewId
-            );
+                    panel.getPanelist(),
+                    "Interview with " +
+                            interview.getApplication().getCandidate().getFirstName() + " " +
+                            interview.getApplication().getCandidate().getLastName() +
+                            " has been rescheduled to " + newDate.toString(),
+                    Notification.NotificationType.WARNING,
+                    Notification.NotificationCategory.INTERVIEW_SCHEDULED,
+                    interviewId);
         }
 
         return updated;
@@ -178,13 +204,13 @@ public class InterviewService {
 
         interview.setStatus(CandidateInterview.InterviewStatus.COMPLETED);
         interview.setCompletedAt(LocalDateTime.now());
-        
+
         return candidateInterviewRepository.save(interview);
     }
 
     public InterviewFeedback submitInterviewFeedback(Long interviewId, Long panelistId,
             InterviewFeedback feedback) {
-        
+
         CandidateInterview interview = candidateInterviewRepository.findById(interviewId)
                 .orElseThrow(() -> new RuntimeException("Interview not found"));
 
@@ -223,7 +249,7 @@ public class InterviewService {
 
         List<InterviewPanel> panels = interviewPanelRepository.findByPanelist(panelist);
         List<CandidateInterview> interviews = new ArrayList<>();
-        
+
         for (InterviewPanel panel : panels) {
             interviews.add(panel.getInterview());
         }

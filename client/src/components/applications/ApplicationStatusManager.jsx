@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchApplicationById, updateApplication } from "../../redux/thunks/applicationThunks";
+import {
+  fetchApplicationById,
+  updateApplication,
+} from "../../redux/thunks/applicationThunks";
 import {
   moveToScreening,
   moveToInterview,
@@ -19,7 +22,9 @@ import {
 
 const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
   const dispatch = useDispatch();
-  const { currentApplication, loading } = useSelector((state) => state.application);
+  const { currentApplication, loading } = useSelector(
+    (state) => state.application
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showHoldModal, setShowHoldModal] = useState(false);
@@ -62,7 +67,9 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center py-8 text-gray-500">
           <p className="text-lg font-medium">Application not found</p>
-          <p className="text-sm mt-2">The requested application could not be loaded.</p>
+          <p className="text-sm mt-2">
+            The requested application could not be loaded.
+          </p>
         </div>
       </div>
     );
@@ -70,7 +77,11 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
 
   const executeAction = async (action, needsReason = false) => {
     // Validate applicationId before proceeding
-    if (!applicationId || applicationId === "undefined" || applicationId === "null") {
+    if (
+      !applicationId ||
+      applicationId === "undefined" ||
+      applicationId === "null"
+    ) {
       showError("Invalid application ID");
       return;
     }
@@ -108,7 +119,11 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
       }
       showSuccess("Application status updated successfully!");
       // Refresh application data after status change
-      if (applicationId && applicationId !== "undefined" && applicationId !== "null") {
+      if (
+        applicationId &&
+        applicationId !== "undefined" &&
+        applicationId !== "null"
+      ) {
         dispatch(fetchApplicationById(applicationId));
       }
       // Notify parent component if callback provided
