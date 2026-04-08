@@ -10,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor
@@ -50,6 +54,7 @@ public class ReviewController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ScreeningFeedbackDTO.class), examples = @ExampleObject(name = "CreateReview", value = "{\"applicationId\":1,\"reviewerId\":2,\"comments\":\"Strong Java fundamentals\",\"score\":85,\"recommendation\":\"SHORTLIST\"}")))
     public ResponseEntity<ScreeningFeedbackDTO> createReview(@RequestBody ScreeningFeedbackDTO reviewData) {
         return ResponseEntity.ok(screeningService.submitScreeningFeedback(reviewData));
     }
@@ -59,6 +64,7 @@ public class ReviewController {
      */
     @PutMapping("/{reviewId}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ScreeningFeedbackDTO.class), examples = @ExampleObject(name = "UpdateReview", value = "{\"applicationId\":1,\"reviewerId\":2,\"comments\":\"Updated review\",\"score\":88,\"recommendation\":\"SHORTLIST\"}")))
     public ResponseEntity<ScreeningFeedbackDTO> updateReview(
             @PathVariable Long reviewId,
             @RequestBody ScreeningFeedbackDTO reviewData) {
@@ -89,6 +95,7 @@ public class ReviewController {
      */
     @PostMapping("/{reviewId}/feedback")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ScreeningFeedbackDTO.class), examples = @ExampleObject(name = "ReviewFeedback", value = "{\"applicationId\":1,\"reviewerId\":2,\"comments\":\"Final review\",\"score\":90,\"recommendation\":\"SHORTLIST\"}")))
     public ResponseEntity<ScreeningFeedbackDTO> submitReviewFeedback(
             @PathVariable Long reviewId,
             @RequestBody ScreeningFeedbackDTO feedback) {

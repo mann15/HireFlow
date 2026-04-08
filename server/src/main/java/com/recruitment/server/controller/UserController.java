@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -54,6 +58,7 @@ public class UserController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class), examples = @ExampleObject(name = "CreateUser", value = "{\"email\":\"new.user@hireflow.com\",\"password\":\"Temp@123\",\"firstName\":\"Nora\",\"lastName\":\"Admin\",\"phone\":\"+919800000000\",\"role\":{\"roleId\":2},\"isActive\":true}")))
     public ResponseEntity<?> createUser(@RequestBody User user) {
         try {
             if (userRepository.findByEmail(user.getEmail()).isPresent()) {
@@ -68,6 +73,7 @@ public class UserController {
 
     @PutMapping("/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class), examples = @ExampleObject(name = "UpdateUser", value = "{\"firstName\":\"Updated\",\"lastName\":\"User\",\"phone\":\"+919811111111\",\"role\":{\"roleId\":2},\"isActive\":true}")))
     public ResponseEntity<?> updateUser(@PathVariable Long userId, @RequestBody User updatedUser) {
         try {
             User user = userRepository.findById(userId)

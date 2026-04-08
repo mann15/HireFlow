@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+
 @RestController
 @RequestMapping("/api/interviews")
 @RequiredArgsConstructor
@@ -23,6 +28,7 @@ public class InterviewController {
 
     @PostMapping("/rounds/define")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = InterviewRound.class)), examples = @ExampleObject(name = "DefineRounds", value = "[{\"roundName\":\"Technical Round 1\",\"roundType\":\"TECHNICAL\",\"roundOrder\":1,\"durationMinutes\":60,\"isMandatory\":true,\"isActive\":true}]")))
     public ResponseEntity<?> defineInterviewRounds(@RequestParam Long positionId,
             @RequestParam(required = false) Long candidateId,
             @RequestBody List<InterviewRound> rounds) {
@@ -58,6 +64,7 @@ public class InterviewController {
 
     @PostMapping("/schedule")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "ScheduleInterview", value = "{\"applicationId\":1,\"roundId\":1,\"interviewDate\":\"2026-03-10T10:00:00\",\"mode\":\"ONLINE\",\"interviewLink\":\"https://meet.example.com/abc\",\"panelistIds\":[2,3]}")))
     public ResponseEntity<?> scheduleInterview(@RequestBody Map<String, Object> scheduleData,
             Authentication authentication) {
         try {
@@ -127,6 +134,7 @@ public class InterviewController {
 
     @PostMapping("/bulk-schedule")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "BulkSchedule", value = "{\"applicationIds\":[1,2],\"roundId\":1,\"interviewDate\":\"2026-03-10T10:00:00\",\"mode\":\"ONLINE\",\"interviewLink\":\"https://meet.example.com/abc\",\"panelistIds\":[2,3]}")))
     public ResponseEntity<?> scheduleBulkInterviews(@RequestBody Map<String, Object> bulkData,
             Authentication authentication) {
         try {
@@ -206,6 +214,7 @@ public class InterviewController {
 
     @PostMapping("/{interviewId}/feedback")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','INTERVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = InterviewFeedback.class), examples = @ExampleObject(name = "InterviewFeedback", value = "{\"feedback_comments\":\"Good knowledge of core topics\",\"overall_rating\":4.0,\"communication_skills\":4.0,\"technical_knowledge\":4.5,\"cultural_fit_rating\":3.5,\"recommendation\":\"HIRE\",\"strengths\":\"Problem solving, Core Java\",\"areas_of_improvement\":\"System design\",\"stage\":\"PANELIST\"}")))
     public ResponseEntity<?> submitFeedback(@PathVariable Long interviewId,
             @RequestBody InterviewFeedback feedback,
             Authentication authentication) {
@@ -224,6 +233,7 @@ public class InterviewController {
 
     @PutMapping("/{interviewId}/feedback/{feedbackId}")
     @PreAuthorize("hasAnyRole('INTERVIEWER','HR','RECRUITER','ADMIN','SUPER_ADMIN')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = InterviewFeedback.class), examples = @ExampleObject(name = "UpdateInterviewFeedback", value = "{\"feedback_comments\":\"Updated feedback\",\"overall_rating\":4.2,\"communication_skills\":4.1,\"technical_knowledge\":4.6,\"cultural_fit_rating\":3.8,\"recommendation\":\"HIRE\",\"strengths\":\"Problem solving\",\"areas_of_improvement\":\"Architecture\",\"stage\":\"PANELIST\"}")))
     public ResponseEntity<?> updateFeedback(@PathVariable Long interviewId,
             @PathVariable Long feedbackId,
             @RequestBody InterviewFeedback feedback,

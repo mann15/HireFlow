@@ -13,6 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/documents")
 @RequiredArgsConstructor
@@ -42,6 +46,7 @@ public class DocumentController {
 
     @PutMapping("/{documentId}/verify")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "VerifyDocument", value = "{\"status\":\"VERIFIED\",\"remarks\":\"Clear document\"}")))
     public ResponseEntity<?> verifyDocument(@PathVariable Long documentId,
             @RequestBody Map<String, String> verificationData,
             Authentication authentication) {
@@ -97,6 +102,7 @@ public class DocumentController {
 
     @PostMapping("/types")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = DocumentTypes.class), examples = @ExampleObject(name = "CreateDocumentType", value = "{\"name\":\"PAN Card\"}")))
     public ResponseEntity<?> createDocumentType(@RequestBody DocumentTypes documentType) {
         try {
             DocumentTypes created = documentService.createDocumentType(documentType);

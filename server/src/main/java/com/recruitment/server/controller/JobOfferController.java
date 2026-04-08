@@ -16,6 +16,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/offers")
 @RequiredArgsConstructor
@@ -26,6 +30,7 @@ public class JobOfferController {
 
     @PostMapping("/generate")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "GenerateOffer", value = "{\"applicationId\":1,\"salaryOffered\":85000,\"offeredDesignation\":\"Software Engineer\",\"joiningDate\":\"2026-03-15\",\"offerValidTill\":\"2026-03-29\"}")))
     public ResponseEntity<?> generateOffer(@RequestBody Map<String, Object> offerData,
             Authentication authentication) {
         try {

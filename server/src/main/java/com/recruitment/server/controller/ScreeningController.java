@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/screening")
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class ScreeningController {
 
     @PostMapping("/feedback")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ScreeningFeedbackDTO.class), examples = @ExampleObject(name = "ScreeningFeedback", value = "{\"applicationId\":1,\"reviewerId\":2,\"comments\":\"Strong Java fundamentals\",\"score\":85,\"recommendation\":\"SHORTLIST\"}")))
     public ResponseEntity<ScreeningFeedbackDTO> submitFeedback(@Valid @RequestBody ScreeningFeedbackDTO feedbackDTO) {
         return ResponseEntity.ok(screeningService.submitScreeningFeedback(feedbackDTO));
     }
@@ -44,6 +49,7 @@ public class ScreeningController {
 
     @PostMapping("/comments")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','REVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = ScreeningCommentDTO.class), examples = @ExampleObject(name = "ScreeningComment", value = "{\"applicationId\":1,\"userId\":2,\"comment\":\"Need to verify documentation\"}")))
     public ResponseEntity<ScreeningCommentDTO> addComment(@RequestBody ScreeningCommentDTO commentDTO) {
         return ResponseEntity.ok(screeningService.addComment(commentDTO));
     }

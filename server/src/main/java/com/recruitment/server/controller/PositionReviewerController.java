@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/position-reviewers")
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class PositionReviewerController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR','RECRUITER','INTERVIEWER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = PositionReviewerDTO.class), examples = @ExampleObject(name = "AssignReviewer", value = "{\"positionId\":1,\"reviewerId\":2}")))
     public ResponseEntity<PositionReviewerDTO> assignReviewer(
             @RequestBody PositionReviewerDTO reviewerDTO,
             Authentication authentication) {
