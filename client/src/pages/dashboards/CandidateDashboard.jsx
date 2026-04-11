@@ -29,6 +29,7 @@ import {
   showSuccess,
   showWarning,
 } from "../../utils/toastUtils";
+import { APPLICATION_STATUS, POSITION_STATUS } from "../../utils/constants";
 
 const CandidateDashboard = () => {
   const navigate = useNavigate();
@@ -110,17 +111,17 @@ const CandidateDashboard = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "APPLIED":
+      case APPLICATION_STATUS.APPLIED:
         return "bg-blue-100 text-blue-800";
-      case "SCREENING":
+      case APPLICATION_STATUS.SCREENING:
         return "bg-purple-100 text-purple-800";
-      case "INTERVIEW":
+      case APPLICATION_STATUS.INTERVIEW:
         return "bg-yellow-100 text-yellow-800";
-      case "SELECTED":
+      case APPLICATION_STATUS.SELECTED:
         return "bg-green-100 text-green-800";
-      case "REJECTED":
+      case APPLICATION_STATUS.REJECTED:
         return "bg-red-100 text-red-800";
-      case "ON_HOLD":
+      case APPLICATION_STATUS.ON_HOLD:
         return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -133,17 +134,17 @@ const CandidateDashboard = () => {
       APPLIED: "Application Submitted",
       UNDER_SCREENING: "CV Under Review",
       PENDING_INTERVIEW: "Interview Scheduled",
-      SELECTED: "Selected",
-      REJECTED: "Rejected",
-      ON_HOLD: "On Hold",
-      WITHDRAWN: "Withdrawn",
+      [APPLICATION_STATUS.SELECTED]: "Selected",
+      [APPLICATION_STATUS.REJECTED]: "Rejected",
+      [APPLICATION_STATUS.ON_HOLD]: "On Hold",
+      [APPLICATION_STATUS.WITHDRAWN]: "Withdrawn",
     };
     return labels[stage] || stage;
   };
 
   // Check if upload documents should be shown (only for SELECTED status)
   const canUploadDocuments = (status) => {
-    return status === "SELECTED" || status === "HIRED";
+    return status === APPLICATION_STATUS.SELECTED || status === "HIRED";
   };
 
   const getOfferStatusColor = (status) => {
@@ -427,7 +428,7 @@ const CandidateDashboard = () => {
                         </div>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            app.status
+                            app.status,
                           )}`}
                         >
                           {app.status}
@@ -458,7 +459,7 @@ const CandidateDashboard = () => {
                           <button
                             onClick={() =>
                               navigate(
-                                `/applications/${app.applicationId}/documents`
+                                `/applications/${app.applicationId}/documents`,
                               )
                             }
                             className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center"
@@ -525,7 +526,7 @@ const CandidateDashboard = () => {
                             <p className="text-sm text-gray-600 mt-1">
                               Uploaded:{" "}
                               {new Date(
-                                cv.uploadedAt || cv.cvId
+                                cv.uploadedAt || cv.cvId,
                               ).toLocaleDateString()}
                             </p>
                             {cv.parsedContent && (
@@ -632,19 +633,19 @@ const CandidateDashboard = () => {
                           onClick={async () => {
                             if (
                               window.confirm(
-                                "Are you sure you want to delete this skill?"
+                                "Are you sure you want to delete this skill?",
                               )
                             ) {
                               try {
                                 // Optimistic UI: remove locally first
                                 setCandidateSkills((prev) =>
                                   prev.filter(
-                                    (s) => s.id !== (skill.id || skill.skillId)
-                                  )
+                                    (s) => s.id !== (skill.id || skill.skillId),
+                                  ),
                                 );
                                 // Call API to delete by CandidateSkills.id
                                 await candidateService.deleteCandidateSkill(
-                                  skill.id || skill.skillId
+                                  skill.id || skill.skillId,
                                 );
                                 showSuccess("Skill deleted successfully");
                                 // Ensure state matches server
@@ -653,8 +654,8 @@ const CandidateDashboard = () => {
                                 showError(
                                   getErrorMessage(
                                     error,
-                                    "Failed to delete skill"
-                                  )
+                                    "Failed to delete skill",
+                                  ),
                                 );
                                 // Restore list from server on failure
                                 await fetchCandidateData();
@@ -736,7 +737,7 @@ const CandidateDashboard = () => {
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          app.status
+                          app.status,
                         )}`}
                       >
                         {app.status}
@@ -796,13 +797,13 @@ const CandidateDashboard = () => {
                               try {
                                 const latestCvId = cvs[0].cvId;
                                 await api.put(
-                                  `/applications/${app.applicationId}/attach-cv/${latestCvId}`
+                                  `/applications/${app.applicationId}/attach-cv/${latestCvId}`,
                                 );
                                 showSuccess("CV attached to application");
                                 fetchCandidateData();
                               } catch (err) {
                                 showError(
-                                  getErrorMessage(err, "Failed to attach CV")
+                                  getErrorMessage(err, "Failed to attach CV"),
                                 );
                               }
                             }}
@@ -815,7 +816,7 @@ const CandidateDashboard = () => {
                         <button
                           onClick={() =>
                             navigate(
-                              `/applications/${app.applicationId}/documents`
+                              `/applications/${app.applicationId}/documents`,
                             )
                           }
                           className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm flex items-center"
@@ -869,7 +870,7 @@ const CandidateDashboard = () => {
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${getOfferStatusColor(
-                          offer.status
+                          offer.status,
                         )}`}
                       >
                         {offer.status}
@@ -999,7 +1000,7 @@ const CandidateDashboard = () => {
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          position.status === "OPEN"
+                          position.status === POSITION_STATUS.OPEN
                             ? "bg-green-100 text-green-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
@@ -1042,18 +1043,24 @@ const CandidateDashboard = () => {
                 <span className="ml-3 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
                   {
                     applications.filter((app) =>
-                      ["APPLIED", "SCREENING", "INTERVIEW", "ON_HOLD"].includes(
-                        app.status
-                      )
+                      [
+                        APPLICATION_STATUS.APPLIED,
+                        APPLICATION_STATUS.SCREENING,
+                        APPLICATION_STATUS.INTERVIEW,
+                        APPLICATION_STATUS.ON_HOLD,
+                      ].includes(app.status),
                     ).length
                   }
                 </span>
               </div>
 
               {applications.filter((app) =>
-                ["APPLIED", "SCREENING", "INTERVIEW", "ON_HOLD"].includes(
-                  app.status
-                )
+                [
+                  APPLICATION_STATUS.APPLIED,
+                  APPLICATION_STATUS.SCREENING,
+                  APPLICATION_STATUS.INTERVIEW,
+                  APPLICATION_STATUS.ON_HOLD,
+                ].includes(app.status),
               ).length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <FaClock className="mx-auto h-10 w-10 text-gray-400 mb-2" />
@@ -1065,9 +1072,12 @@ const CandidateDashboard = () => {
                 <div className="space-y-4">
                   {applications
                     .filter((app) =>
-                      ["APPLIED", "SCREENING", "INTERVIEW", "ON_HOLD"].includes(
-                        app.status
-                      )
+                      [
+                        APPLICATION_STATUS.APPLIED,
+                        APPLICATION_STATUS.SCREENING,
+                        APPLICATION_STATUS.INTERVIEW,
+                        APPLICATION_STATUS.ON_HOLD,
+                      ].includes(app.status),
                     )
                     .map((app) => (
                       <div
@@ -1089,7 +1099,7 @@ const CandidateDashboard = () => {
                           </div>
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              app.status
+                              app.status,
                             )}`}
                           >
                             {app.status}
@@ -1147,14 +1157,16 @@ const CandidateDashboard = () => {
                 <span className="ml-3 px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
                   {
                     applications.filter((app) =>
-                      ["SELECTED", "REJECTED", "WITHDRAWN"].includes(app.status)
+                      ["SELECTED", "REJECTED", "WITHDRAWN"].includes(
+                        app.status,
+                      ),
                     ).length
                   }
                 </span>
               </div>
 
               {applications.filter((app) =>
-                ["SELECTED", "REJECTED", "WITHDRAWN"].includes(app.status)
+                ["SELECTED", "REJECTED", "WITHDRAWN"].includes(app.status),
               ).length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                   <FaCheckCircle className="mx-auto h-10 w-10 text-gray-400 mb-2" />
@@ -1164,7 +1176,9 @@ const CandidateDashboard = () => {
                 <div className="space-y-4">
                   {applications
                     .filter((app) =>
-                      ["SELECTED", "REJECTED", "WITHDRAWN"].includes(app.status)
+                      ["SELECTED", "REJECTED", "WITHDRAWN"].includes(
+                        app.status,
+                      ),
                     )
                     .map((app) => (
                       <div
@@ -1187,7 +1201,7 @@ const CandidateDashboard = () => {
                                   {" "}
                                   • Closed:{" "}
                                   {new Date(
-                                    app.statusUpdatedAt
+                                    app.statusUpdatedAt,
                                   ).toLocaleDateString()}
                                 </>
                               )}
@@ -1195,7 +1209,7 @@ const CandidateDashboard = () => {
                           </div>
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                              app.status
+                              app.status,
                             )}`}
                           >
                             {app.status}
@@ -1241,7 +1255,7 @@ const CandidateDashboard = () => {
                             <button
                               onClick={() =>
                                 navigate(
-                                  `/applications/${app.applicationId}/documents`
+                                  `/applications/${app.applicationId}/documents`,
                                 )
                               }
                               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center"

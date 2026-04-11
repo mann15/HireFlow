@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { interviewService, candidateService } from "../../services/apiService";
+import { INTERVIEW_STATUS } from "../../utils/constants";
 import Loader from "../../components/Loader";
 
 const InterviewerDashboard = () => {
@@ -18,34 +19,41 @@ const InterviewerDashboard = () => {
     loadDashboardData();
   }, []);
 
+  const unwrapList = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.content)) return value.content;
+    return [];
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const interviews = await interviewService
-        .getMyInterviews()
-        .catch(() => []);
+      const interviews = unwrapList(
+        await interviewService.getMyInterviews().catch(() => []),
+      );
 
       const today = new Date().toDateString();
-      const todayInterviews = Array.isArray(interviews)
-        ? interviews.filter((i) => {
-            const interviewDate = new Date(i.scheduledDate).toDateString();
-            return interviewDate === today;
-          })
-        : [];
+      const todayInterviews = interviews.filter((interview) => {
+        const interviewDate = new Date(interview.scheduledDate).toDateString();
+        return interviewDate === today;
+      });
 
-      const scheduled = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "SCHEDULED")
-        : [];
+      const scheduled = interviews.filter(
+        (interview) => interview.status === INTERVIEW_STATUS.SCHEDULED,
+      );
 
-      const pending = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "SCHEDULED" && !i.feedback)
-        : [];
+      const pending = interviews.filter(
+        (interview) =>
+          interview.status === INTERVIEW_STATUS.SCHEDULED &&
+          !interview.feedback,
+      );
 
-      const completed = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "COMPLETED")
-        : [];
+      const completed = interviews.filter(
+        (interview) => interview.status === INTERVIEW_STATUS.COMPLETED,
+      );
 
       setStats({
         scheduledInterviews: scheduled.length,
@@ -55,12 +63,12 @@ const InterviewerDashboard = () => {
       });
 
       setUpcomingInterviews(
-        scheduled.slice(0, 5).map((i) => ({
-          id: i.id,
-          candidateName: i.candidateName || "N/A",
-          position: i.position || "N/A",
-          scheduledDate: new Date(i.scheduledDate).toLocaleString(),
-        }))
+        scheduled.slice(0, 5).map((interview) => ({
+          id: interview.id,
+          candidateName: interview.candidateName || "N/A",
+          position: interview.position || "N/A",
+          scheduledDate: new Date(interview.scheduledDate).toLocaleString(),
+        })),
       );
     } catch (err) {
       console.error("Failed to load interviewer dashboard data:", err);

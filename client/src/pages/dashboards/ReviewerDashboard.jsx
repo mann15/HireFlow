@@ -7,14 +7,15 @@ import {
   reviewService,
 } from "../../services/apiService";
 import Loader from "../../components/Loader";
+import { APPLICATION_STATUS } from "../../utils/constants";
 
 const isScreeningApplication = (application) => {
   const status = application?.status;
   const currentStage = application?.currentStage;
 
   return (
-    status === "APPLIED" ||
-    status === "SCREENING" ||
+    status === APPLICATION_STATUS.APPLIED ||
+    status === APPLICATION_STATUS.SCREENING ||
     status === "SCREENING_PENDING" ||
     currentStage?.includes("SCREENING") ||
     currentStage?.includes("REVIEW")
