@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   applicationService,
   positionService,
@@ -7,7 +8,31 @@ import {
 } from "../../services/apiService";
 import Loader from "../../components/Loader";
 
+const isScreeningApplication = (application) => {
+  const status = application?.status;
+  const currentStage = application?.currentStage;
+
+  return (
+    status === "APPLIED" ||
+    status === "SCREENING" ||
+    status === "SCREENING_PENDING" ||
+    currentStage?.includes("SCREENING") ||
+    currentStage?.includes("REVIEW")
+  );
+};
+
+const normalizeRole = (role) => {
+  const rawRole =
+    typeof role === "object" ? role?.roleName || role?.name : role;
+  return rawRole
+    ? String(rawRole)
+        .replace(/^ROLE_/, "")
+        .toUpperCase()
+    : rawRole;
+};
+
 const ReviewerDashboard = () => {
+  const { currentUser } = useSelector((state) => state.user);
   const [stats, setStats] = useState({
     pendingScreenings: 0,
     assignedPositions: 0,
@@ -26,24 +51,56 @@ const ReviewerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [applications, positions, reviews] = await Promise.all([
-        applicationService.getApplications().catch(() => []),
-        positionService.getPositions().catch(() => []),
+      const role = normalizeRole(currentUser?.role || currentUser?.roleName);
+      const reviewerId =
+        currentUser?.userId || currentUser?.id || currentUser?.user?.id;
+
+      const [assignedPositions, reviews] = await Promise.all([
+        role === "REVIEWER"
+          ? reviewService.getPositionsByReviewer(reviewerId).catch(() => [])
+          : Promise.resolve([]),
         reviewService.getReviews
           ? reviewService.getReviews().catch(() => [])
           : Promise.resolve([]),
       ]);
 
+      const applicationLists =
+        Array.isArray(assignedPositions) && assignedPositions.length > 0
+          ? await Promise.all(
+              assignedPositions.map((assignment) =>
+                applicationService
+                  .getApplications({
+                    positionId:
+                      assignment.positionId || assignment.position?.positionId,
+                  })
+                  .catch(() => []),
+              ),
+            )
+          : [await applicationService.getApplications().catch(() => [])];
+
+      const uniqueApplications = new Map();
+      applicationLists.flat().forEach((application) => {
+        if (application?.applicationId != null) {
+          uniqueApplications.set(application.applicationId, application);
+        }
+      });
+
+      const applications = Array.from(uniqueApplications.values());
+      const positions =
+        Array.isArray(assignedPositions) && assignedPositions.length > 0
+          ? assignedPositions.map(
+              (assignment) => assignment.position || assignment,
+            )
+          : await positionService.getPositions().catch(() => []);
+
       setStats({
         pendingScreenings: Array.isArray(applications)
-          ? applications.filter((a) => a.status === "SCREENING_PENDING").length
+          ? applications.filter(isScreeningApplication).length
           : 0,
-        assignedPositions: Array.isArray(positions)
-          ? positions.filter((p) => p.status === "OPEN").length
-          : 0,
+        assignedPositions: Array.isArray(positions) ? positions.length : 0,
         completedReviews: Array.isArray(reviews) ? reviews.length : 0,
         assignedApplications: Array.isArray(applications)
-          ? applications.filter((a) => a.reviewerAssigned === true).length
+          ? applications.filter(isScreeningApplication).length
           : 0,
       });
     } catch (err) {
@@ -98,10 +155,10 @@ const ReviewerDashboard = () => {
               </div>
             </div>
             <Link
-              to="/applications"
+              to="/review/screening"
               className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium text-sm"
             >
-              View Details →
+              View Assigned Applications →
             </Link>
           </div>
 
@@ -154,7 +211,7 @@ const ReviewerDashboard = () => {
               </p>
             </Link>
             <Link
-              to="/applications"
+              to="/review/screening"
               className="p-4 border rounded-lg hover:bg-green-50 transition"
             >
               <p className="font-medium">View Applications</p>

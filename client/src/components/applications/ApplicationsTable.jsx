@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchApplications } from "../../redux/thunks/applicationThunks";
-import { setFilters } from "../../redux/applicationSlice";
+import { setFilters, setApplications } from "../../redux/applicationSlice";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { applicationService, reviewService } from "../../services/apiService";
+
+const normalizeRole = (role) => {
+  const rawRole =
+    typeof role === "object" ? role?.roleName || role?.name : role;
+  return rawRole
+    ? String(rawRole)
+        .replace(/^ROLE_/, "")
+        .toUpperCase()
+    : rawRole;
+};
 
 const ApplicationsTable = ({ positionId = null }) => {
   const dispatch = useDispatch();
@@ -12,9 +23,48 @@ const ApplicationsTable = ({ positionId = null }) => {
   const [filter, setFilter] = useState("ALL");
 
   useEffect(() => {
-    dispatch(fetchApplications({ positionId, status: filter }));
-    dispatch(setFilters({ positionId, status: filter }));
-  }, [dispatch, positionId, filter]);
+    const loadApplications = async () => {
+      const role = normalizeRole(currentUser?.role || currentUser?.roleName);
+
+      if (role === "REVIEWER" && !positionId) {
+        const reviewerId =
+          currentUser?.userId || currentUser?.id || currentUser?.user?.id;
+        const assignments = await reviewService
+          .getPositionsByReviewer(reviewerId)
+          .catch(() => []);
+        const positionIds = assignments
+          .map(
+            (assignment) =>
+              assignment.positionId || assignment.position?.positionId,
+          )
+          .filter(Boolean);
+
+        const lists = await Promise.all(
+          positionIds.map((id) =>
+            applicationService
+              .getApplications({ positionId: id })
+              .catch(() => []),
+          ),
+        );
+
+        const uniqueApplications = new Map();
+        lists.flat().forEach((application) => {
+          if (application?.applicationId != null) {
+            uniqueApplications.set(application.applicationId, application);
+          }
+        });
+
+        dispatch(setApplications(Array.from(uniqueApplications.values())));
+        dispatch(setFilters({ positionId, status: filter }));
+        return;
+      }
+
+      dispatch(fetchApplications({ positionId, status: filter }));
+      dispatch(setFilters({ positionId, status: filter }));
+    };
+
+    loadApplications();
+  }, [dispatch, positionId, filter, currentUser]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -34,21 +84,15 @@ const ApplicationsTable = ({ positionId = null }) => {
   }
 
   // Check if user is a reviewer
-  const userRole =
-    currentUser?.role?.roleName || currentUser?.roleName || currentUser?.role;
+  const userRole = normalizeRole(
+    currentUser?.role || currentUser?.roleName || currentUser?.role,
+  );
   const isReviewer = userRole === "REVIEWER";
   const currentUserId =
     currentUser?.userId || currentUser?.id || currentUser?.user?.id;
 
   // Filter applications for reviewers - show only assigned ones
-  const filteredApplications = isReviewer
-    ? applications.filter(
-        (app) =>
-          app.reviewerAssigned === true ||
-          app.reviewerId === currentUserId ||
-          app.assignedReviewerId === currentUserId
-      )
-    : applications;
+  const filteredApplications = isReviewer ? applications : applications;
 
   return (
     <div className="bg-white rounded-lg shadow">
@@ -128,7 +172,7 @@ const ApplicationsTable = ({ positionId = null }) => {
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        app.status
+                        app.status,
                       )}`}
                     >
                       {app.status}

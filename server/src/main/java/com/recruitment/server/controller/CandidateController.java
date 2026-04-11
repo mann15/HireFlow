@@ -373,8 +373,7 @@ public class CandidateController {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             Map<String, Object> response = new HashMap<>();
             response.put("candidate", candidate);
@@ -399,8 +398,9 @@ public class CandidateController {
     public ResponseEntity<?> getMyApplications(Authentication authentication) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             List<JobApplication> applications = jobApplicationRepository.findByCandidate(candidate);
 
@@ -446,8 +446,9 @@ public class CandidateController {
     public ResponseEntity<?> getMyApplicationById(@PathVariable Long applicationId, Authentication authentication) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             JobApplication application = jobApplicationRepository.findById(applicationId)
                     .orElseThrow(() -> new RuntimeException("Application not found"));
@@ -532,8 +533,9 @@ public class CandidateController {
     public ResponseEntity<?> getAvailablePositions(Authentication authentication) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             // Get all open positions
             List<JobPosition> openPositions = jobRepository.findAll().stream()
@@ -580,8 +582,9 @@ public class CandidateController {
     public ResponseEntity<?> getMyCVs(Authentication authentication) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             List<CandidateCV> cvs = candidateService.getCandidateCVs(candidate.getCandidateId());
             return ResponseEntity.ok(cvs);
@@ -599,8 +602,9 @@ public class CandidateController {
             @RequestParam("file") MultipartFile file) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             Map<String, Object> result = candidateService.uploadCV(candidate.getCandidateId(), positionId, file);
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
@@ -620,8 +624,9 @@ public class CandidateController {
     public ResponseEntity<?> deleteMyCV(Authentication authentication, @PathVariable Long cvId) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             // Verify the CV belongs to this candidate
             CandidateCV cv = candidateCVRepository.findById(cvId)
@@ -648,8 +653,9 @@ public class CandidateController {
     public ResponseEntity<?> downloadMyCV(Authentication authentication, @PathVariable Long cvId) {
         try {
             String email = authentication.getName();
-            Candidate candidate = candidateRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
+            User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+            Candidate candidate = resolveCandidateProfile(user, email);
 
             // Verify the CV belongs to this candidate
             CandidateCV cv = candidateCVRepository.findById(cvId)
@@ -674,5 +680,11 @@ public class CandidateController {
             error.put("error", "Failed to download CV: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
+    }
+
+    private Candidate resolveCandidateProfile(User user, String email) {
+        return candidateRepository.findByUser_UserId(user.getUserId())
+                .or(() -> candidateRepository.findByEmail(email))
+                .orElseThrow(() -> new RuntimeException("Candidate profile not found"));
     }
 }

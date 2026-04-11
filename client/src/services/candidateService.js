@@ -43,7 +43,7 @@ export const candidateService = {
     try {
       const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/bulk-upload`,
-        candidateData
+        candidateData,
       );
       return response.data;
     } catch (error) {
@@ -56,7 +56,7 @@ export const candidateService = {
     candidateId,
     skillId,
     proficiencyLevelId,
-    yearsOfExperience
+    yearsOfExperience,
   ) => {
     try {
       const payload = {
@@ -68,7 +68,7 @@ export const candidateService = {
       }
       const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/skills`,
-        payload
+        payload,
       );
       return response.data;
     } catch (error) {
@@ -111,7 +111,7 @@ export const candidateService = {
   getCandidateById: async (candidateId) => {
     try {
       const response = await api.get(
-        `${CANDIDATE_API_BASE_URL}/${candidateId}`
+        `${CANDIDATE_API_BASE_URL}/${candidateId}`,
       );
       return response.data;
     } catch (error) {
@@ -156,7 +156,7 @@ export const candidateService = {
   findCandidatesForPosition: async (positionId) => {
     try {
       const response = await api.get(
-        `${CANDIDATE_API_BASE_URL}/for-position/${positionId}`
+        `${CANDIDATE_API_BASE_URL}/for-position/${positionId}`,
       );
       console.log("findCandidatesForPosition response:", response.data);
 
@@ -190,7 +190,7 @@ export const candidateService = {
     try {
       const response = await api.put(
         `${CANDIDATE_API_BASE_URL}/${candidateId}`,
-        candidateData
+        candidateData,
       );
       return response.data;
     } catch (error) {
@@ -202,7 +202,7 @@ export const candidateService = {
   deactivateCandidate: async (candidateId) => {
     try {
       const response = await api.delete(
-        `${CANDIDATE_API_BASE_URL}/${candidateId}`
+        `${CANDIDATE_API_BASE_URL}/${candidateId}`,
       );
       return response.data;
     } catch (error) {
@@ -213,7 +213,11 @@ export const candidateService = {
   // Get candidate's CVs
   getCandidateCVs: async (candidateId) => {
     try {
-      const response = await api.get(`${CANDIDATE_API_BASE_URL}/me/cvs`);
+      const endpoint = candidateId
+        ? `${CANDIDATE_API_BASE_URL}/${candidateId}/cvs`
+        : `${CANDIDATE_API_BASE_URL}/me/cvs`;
+
+      const response = await api.get(endpoint);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -239,7 +243,7 @@ export const candidateService = {
   deleteCandidateSkill: async (candidateSkillId) => {
     try {
       const response = await api.delete(
-        `${CANDIDATE_API_BASE_URL}/skills/${candidateSkillId}`
+        `${CANDIDATE_API_BASE_URL}/skills/${candidateSkillId}`,
       );
       return response.data;
     } catch (error) {
@@ -252,7 +256,7 @@ export const candidateService = {
     try {
       const response = await api.post(
         `${CANDIDATE_API_BASE_URL}/${candidateId}/apply`,
-        { positionId, cvId }
+        { positionId, cvId },
       );
       return response.data;
     } catch (error) {
@@ -272,7 +276,7 @@ export const candidateService = {
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       return response.data;
     } catch (error) {
@@ -284,7 +288,7 @@ export const candidateService = {
   getMatchingCandidates: async (positionId) => {
     try {
       const response = await api.get(
-        `${CANDIDATE_API_BASE_URL}/matching/${positionId}`
+        `${CANDIDATE_API_BASE_URL}/matching/${positionId}`,
       );
       return response.data;
     } catch (error) {
