@@ -59,6 +59,15 @@ const ApplicationDetailsPage = () => {
   };
 
   const application = currentApplication;
+  const resolvedApplicationId =
+    application?.applicationId || application?.id || applicationId;
+  const resolvedCandidateId =
+    application?.candidate?.candidateId || application?.candidateId;
+  const resolvedCandidateName =
+    application?.candidateName ||
+    `${application?.candidate?.firstName || ""} ${application?.candidate?.lastName || ""}`.trim();
+  const resolvedPositionTitle =
+    application?.positionTitle || application?.position?.jobTitle;
 
   const tabs = isCandidate
     ? [
@@ -428,18 +437,11 @@ const ApplicationDetailsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <ScheduleInterview
-                applicationId={
-                  application.applicationId || application.id || applicationId
-                }
+                applicationId={resolvedApplicationId}
                 positionId={
                   application.position?.positionId || application.positionId
                 }
-                candidateName={
-                  application.candidateName ||
-                  `${application.candidate?.firstName || ""} ${
-                    application.candidate?.lastName || ""
-                  }`.trim()
-                }
+                candidateName={resolvedCandidateName}
                 onComplete={() => {
                   setShowScheduleInterview(false);
                   fetchApplication();
@@ -454,9 +456,9 @@ const ApplicationDetailsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <GenerateOffer
-                applicationId={application.id}
-                candidateName={application.candidateName}
-                positionTitle={application.positionTitle}
+                applicationId={resolvedApplicationId}
+                candidateName={resolvedCandidateName}
+                positionTitle={resolvedPositionTitle}
                 onComplete={() => {
                   setShowGenerateOffer(false);
                   fetchApplication();
@@ -470,8 +472,8 @@ const ApplicationDetailsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <DocumentUpload
-                applicationId={application.id}
-                candidateId={application.candidateId}
+                applicationId={resolvedApplicationId}
+                candidateId={resolvedCandidateId}
                 onUploadComplete={() => {
                   setShowUploadDocument(false);
                   fetchApplication();
@@ -485,9 +487,9 @@ const ApplicationDetailsPage = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <CreateEmployee
-                candidateId={application.candidateId}
-                applicationId={application.id}
-                candidateName={application.candidateName}
+                candidateId={resolvedCandidateId}
+                applicationId={resolvedApplicationId}
+                candidateName={resolvedCandidateName}
                 onComplete={() => {
                   setShowCreateEmployee(false);
                   fetchApplication();
