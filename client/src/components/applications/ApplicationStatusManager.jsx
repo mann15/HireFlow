@@ -19,11 +19,17 @@ import {
   showWarning,
   getErrorMessage,
 } from "../../utils/toastUtils";
+import {
+  btnPrimaryMd,
+  btnSuccessMd,
+  btnDangerMd,
+  btnSecondaryMd,
+} from "../../utils/buttonStyles";
 
 const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
   const dispatch = useDispatch();
   const { currentApplication, loading } = useSelector(
-    (state) => state.application
+    (state) => state.application,
   );
   const [actionLoading, setActionLoading] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -171,7 +177,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
             <p className="text-sm text-gray-600">Current Status</p>
             <span
               className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                application.status
+                application.status,
               )}`}
             >
               {application.status}
@@ -214,7 +220,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
             <button
               onClick={() => handleAction("SCREENING")}
               disabled={actionLoading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+              className={`${btnPrimaryMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Move to Screening
             </button>
@@ -224,7 +230,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
             <button
               onClick={() => handleAction("INTERVIEW")}
               disabled={actionLoading}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:bg-gray-400"
+              className={`${btnPrimaryMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Move to Interview
             </button>
@@ -234,20 +240,20 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
             <button
               onClick={() => handleAction("SELECT")}
               disabled={actionLoading}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+              className={`${btnSuccessMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               Select Candidate
             </button>
           )}
 
           {!["SELECTED", "REJECTED", "WITHDRAWN"].includes(
-            application.status
+            application.status,
           ) && (
             <>
               <button
                 onClick={() => setShowHoldModal(true)}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400"
+                className={`${btnSecondaryMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Put on Hold
               </button>
@@ -255,7 +261,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
               <button
                 onClick={() => setShowRejectModal(true)}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                className={`${btnDangerMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 Reject
               </button>
@@ -290,7 +296,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
               <button
                 onClick={() => handleAction("REJECT", true)}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400"
+                className={`${btnDangerMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {actionLoading ? "Rejecting..." : "Confirm Reject"}
               </button>
@@ -325,7 +331,7 @@ const ApplicationStatusManager = ({ applicationId, onUpdate }) => {
               <button
                 onClick={() => handleAction("HOLD", true)}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400"
+                className={`${btnSecondaryMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {actionLoading ? "Processing..." : "Confirm Hold"}
               </button>

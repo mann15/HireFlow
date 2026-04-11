@@ -7,6 +7,7 @@ import {
   showError,
   showSuccess,
 } from "../../utils/toastUtils";
+import { btnSuccessMd, btnPrimaryMd } from "../../utils/buttonStyles";
 
 const PendingDocumentsQueue = () => {
   const [documents, setDocuments] = useState([]);
@@ -76,7 +77,6 @@ const PendingDocumentsQueue = () => {
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-
                   <h3 className="font-semibold text-lg">
                     {doc.documentType.name}
                   </h3>
@@ -154,7 +154,7 @@ const PendingDocumentsQueue = () => {
                     <button
                       onClick={() => handleVerify(doc.id)}
                       disabled={actionLoading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400"
+                      className={`${btnSuccessMd} rounded-md disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {actionLoading ? "Saving..." : "Save Verification"}
                     </button>
@@ -172,7 +172,7 @@ const PendingDocumentsQueue = () => {
               ) : (
                 <button
                   onClick={() => setSelectedDoc(doc.id)}
-                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className={`mt-3 ${btnPrimaryMd} rounded-md`}
                 >
                   Review & Verify
                 </button>

@@ -4,6 +4,11 @@ import { candidateService } from "../../services/candidateService";
 import Loader from "../../components/Loader";
 import BulkUploadCandidates from "../../components/candidates/BulkUploadCandidates";
 import CVUpload from "../../components/candidates/CVUpload";
+import {
+  btnSuccessMd,
+  btnPrimaryMd,
+  btnSecondaryMd,
+} from "../../utils/buttonStyles";
 
 const CandidatesList = () => {
   const [candidates, setCandidates] = useState([]);
@@ -39,7 +44,7 @@ const CandidatesList = () => {
     try {
       setLoading(true);
       const params = Object.fromEntries(
-        Object.entries(searchParams).filter(([_, value]) => value !== "")
+        Object.entries(searchParams).filter(([_, value]) => value !== ""),
       );
       const data = await candidateService.searchCandidates(params);
       setCandidates(data);
@@ -78,19 +83,19 @@ const CandidatesList = () => {
           <div className="flex gap-4">
             <button
               onClick={() => setShowBulkUpload(!showBulkUpload)}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium"
+              className={`${btnSuccessMd} rounded-lg transition duration-200`}
             >
               {showBulkUpload ? "Hide Bulk Upload" : "Bulk Upload"}
             </button>
             <button
               onClick={() => setShowCreateFromCV(!showCreateFromCV)}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition duration-200 font-medium"
+              className={`${btnPrimaryMd} rounded-lg transition duration-200`}
             >
               {showCreateFromCV ? "Hide Create from CV" : "Create from CV"}
             </button>
             <Link
               to="/candidates/add"
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+              className={`${btnPrimaryMd} rounded-lg transition duration-200 inline-flex justify-center`}
             >
               Add New Candidate
             </Link>
@@ -178,13 +183,13 @@ const CandidatesList = () => {
           <div className="flex gap-4 mt-4">
             <button
               onClick={handleSearch}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition duration-200"
+              className={`${btnPrimaryMd} rounded-md transition duration-200`}
             >
               Search
             </button>
             <button
               onClick={handleClearSearch}
-              className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition duration-200"
+              className={`${btnSecondaryMd} rounded-md transition duration-200`}
             >
               Clear
             </button>
@@ -271,13 +276,13 @@ const CandidatesList = () => {
               <div className="flex gap-2">
                 <Link
                   to={`/candidates/${candidate.candidateId}`}
-                  className="flex-1 bg-blue-600 text-white text-center py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 text-sm"
+                  className={`flex-1 ${btnPrimaryMd} text-center rounded-md transition duration-200 text-sm`}
                 >
                   View Profile
                 </Link>
                 <Link
                   to={`/candidates/${candidate.candidateId}/edit`}
-                  className="flex-1 bg-gray-600 text-white text-center py-2 px-4 rounded-md hover:bg-gray-700 transition duration-200 text-sm"
+                  className={`flex-1 ${btnSecondaryMd} text-center rounded-md transition duration-200 text-sm`}
                 >
                   Edit
                 </Link>

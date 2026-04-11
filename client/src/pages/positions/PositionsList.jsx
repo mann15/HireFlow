@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchPositions } from "../../redux/thunks/positionThunks";
 import { setFilters } from "../../redux/positionSlice";
 import PositionCard from "../../components/positions/PositionCard";
+import { btnPrimaryMd } from "../../utils/buttonStyles";
 
 const PositionsList = () => {
   const dispatch = useDispatch();
@@ -57,8 +58,7 @@ const PositionsList = () => {
           </div>
           <Link
             to="/positions/add"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
-            style={{ backgroundColor: "var(--primary-color)" }}
+            className={`inline-flex items-center ${btnPrimaryMd} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500`}
           >
             <svg
               className="h-5 w-5 mr-2"
