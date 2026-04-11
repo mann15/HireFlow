@@ -58,7 +58,7 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
       if (onRefresh) onRefresh();
     } catch (err) {
       showError(
-        getErrorMessage(err, "Failed to update background verification status")
+        getErrorMessage(err, "Failed to update background verification status"),
       );
     } finally {
       setSavingBg(false);
