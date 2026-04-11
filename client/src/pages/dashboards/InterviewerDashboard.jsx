@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { interviewService, candidateService } from "../../services/apiService";
+import { interviewService } from "../../services/apiService";
 import { INTERVIEW_STATUS } from "../../utils/constants";
 import Loader from "../../components/Loader";
 
@@ -26,6 +26,29 @@ const InterviewerDashboard = () => {
     return [];
   };
 
+  const formatInterviewDate = (value) => {
+    if (!value) return "N/A";
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
+  };
+
+  const getInterviewCandidateName = (interview) => {
+    const firstName = interview?.application?.candidate?.firstName;
+    const lastName = interview?.application?.candidate?.lastName;
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    return fullName || interview?.candidateName || "N/A";
+  };
+
+  const getInterviewPositionTitle = (interview) => {
+    return (
+      interview?.application?.position?.jobTitle ||
+      interview?.position?.jobTitle ||
+      interview?.position ||
+      "N/A"
+    );
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -37,8 +60,11 @@ const InterviewerDashboard = () => {
 
       const today = new Date().toDateString();
       const todayInterviews = interviews.filter((interview) => {
-        const interviewDate = new Date(interview.scheduledDate).toDateString();
-        return interviewDate === today;
+        const interviewDate = new Date(interview.interviewDate);
+        return (
+          !Number.isNaN(interviewDate.getTime()) &&
+          interviewDate.toDateString() === today
+        );
       });
 
       const scheduled = interviews.filter(
@@ -64,10 +90,10 @@ const InterviewerDashboard = () => {
 
       setUpcomingInterviews(
         scheduled.slice(0, 5).map((interview) => ({
-          id: interview.id,
-          candidateName: interview.candidateName || "N/A",
-          position: interview.position || "N/A",
-          scheduledDate: new Date(interview.scheduledDate).toLocaleString(),
+          id: interview.interviewId || interview.id,
+          candidateName: getInterviewCandidateName(interview),
+          position: getInterviewPositionTitle(interview),
+          scheduledDate: formatInterviewDate(interview.interviewDate),
         })),
       );
     } catch (err) {
@@ -93,6 +119,15 @@ const InterviewerDashboard = () => {
 
         <h1 className="text-3xl font-bold mb-8">Interviewer Dashboard</h1>
 
+        <div className="mb-8">
+          <Link
+            to="/interviews/my"
+            className="inline-flex items-center px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Open My Interviews
+          </Link>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
@@ -104,12 +139,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-blue-600 hover:text-blue-800 font-medium text-sm"
-            >
-              View Interviews →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -121,12 +150,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-orange-600 hover:text-orange-800 font-medium text-sm"
-            >
-              Add Feedback →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -138,12 +161,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium text-sm"
-            >
-              View History →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -180,39 +197,12 @@ const InterviewerDashboard = () => {
                       {interview.scheduledDate}
                     </p>
                   </div>
-                  <Link
-                    to={`/interviews/${interview.id}`}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                  >
-                    View
-                  </Link>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-gray-500">No upcoming interviews</p>
           )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-            <Link
-              to="/interviews/my"
-              className="p-4 border rounded-lg hover:bg-blue-50 transition"
-            >
-              <p className="font-medium">My Interviews</p>
-              <p className="text-sm text-gray-500">View all interviews</p>
-            </Link>
-            <Link
-              to="/interviews/my"
-              className="p-4 border rounded-lg hover:bg-orange-50 transition"
-            >
-              <p className="font-medium">Add Feedback</p>
-              <p className="text-sm text-gray-500">Submit interview feedback</p>
-            </Link>
-          </div>
         </div>
       </div>
     </div>
