@@ -399,7 +399,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             List<JobApplication> applications = jobApplicationRepository.findByCandidate(candidate);
@@ -447,7 +447,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             JobApplication application = jobApplicationRepository.findById(applicationId)
@@ -534,7 +534,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             // Get all open positions
@@ -583,7 +583,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             List<CandidateCV> cvs = candidateService.getCandidateCVs(candidate.getCandidateId());
@@ -603,7 +603,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             Map<String, Object> result = candidateService.uploadCV(candidate.getCandidateId(), positionId, file);
@@ -625,7 +625,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             // Verify the CV belongs to this candidate
@@ -654,7 +654,7 @@ public class CandidateController {
         try {
             String email = authentication.getName();
             User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             Candidate candidate = resolveCandidateProfile(user, email);
 
             // Verify the CV belongs to this candidate
