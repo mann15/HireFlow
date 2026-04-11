@@ -31,6 +31,10 @@ import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -66,6 +70,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = User.class), examples = @ExampleObject(name = "Register", value = "{\"email\":\"candidate1@hireflow.com\",\"password\":\"Candidate@123\",\"firstName\":\"Cathy\",\"lastName\":\"Candidate\",\"phone\":\"+919876543210\"}")))
     public ResponseEntity<?> register(@RequestBody User user, HttpServletRequest request,
             HttpServletResponse response) {
         if (userRepo.findByEmail(user.getEmail()).isPresent()) {
@@ -100,6 +105,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = AuthRequest.class), examples = @ExampleObject(name = "Login", value = "{\"email\":\"admin@hireflow.com\",\"password\":\"Admin@123\"}")))
     public ResponseEntity<?> login(@RequestBody AuthRequest loginRequest, HttpServletRequest request,
             HttpServletResponse response) {
         try {
@@ -188,6 +194,7 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "ChangePassword", value = "{\"newPassword\":\"NewPass@123\"}")))
     public ResponseEntity<?> changePassword(
             @RequestBody Map<String, String> request,
             Authentication authentication) {

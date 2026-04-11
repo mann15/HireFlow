@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class ApplicationController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "CreateApplication", value = "{\"candidateId\":1,\"positionId\":1,\"cvId\":1}")))
     public ResponseEntity<?> createApplication(@RequestBody Map<String, Object> applicationData) {
         try {
             Long candidateId = Long.valueOf(applicationData.get("candidateId").toString());
@@ -124,6 +129,7 @@ public class ApplicationController {
 
     @PutMapping("/{applicationId}/status")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "UpdateApplicationStatus", value = "{\"status\":\"SCREENING\",\"reason\":\"Initial review\"}")))
     public ResponseEntity<?> updateApplicationStatus(@PathVariable Long applicationId,
             @RequestBody Map<String, String> statusData,
             Authentication authentication) {

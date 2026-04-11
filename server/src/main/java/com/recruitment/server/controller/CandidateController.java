@@ -23,6 +23,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+
 @RestController
 @RequestMapping("/api/candidates")
 @RequiredArgsConstructor
@@ -39,6 +44,7 @@ public class CandidateController {
     // Create candidate profile manually
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Candidate.class), examples = @ExampleObject(name = "CreateCandidate", value = "{\"email\":\"new.candidate@hireflow.com\",\"firstName\":\"Neha\",\"lastName\":\"Verma\",\"phone\":\"+919812345678\",\"currentLocation\":\"Mumbai\",\"preferredLocation\":\"Mumbai\",\"totalExperience\":3,\"source\":\"JOB_PORTAL\"}")))
     public ResponseEntity<?> createCandidate(@RequestBody Candidate candidate) {
         try {
             Candidate createdCandidate = candidateService.createCandidate(candidate);
@@ -75,6 +81,7 @@ public class CandidateController {
     // Bulk upload candidates from Excel
     @PostMapping("/bulk-upload")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Map.class)), examples = @ExampleObject(name = "BulkUploadCandidates", value = "[{\"email\":\"alice@example.com\",\"firstName\":\"Alice\",\"lastName\":\"Anderson\",\"phone\":\"+919876543210\",\"currentLocation\":\"Mumbai\",\"totalExperience\":3},{\"email\":\"bob@example.com\",\"firstName\":\"Bob\",\"lastName\":\"Builder\",\"phone\":\"+919812345678\",\"currentLocation\":\"New Delhi\",\"totalExperience\":5}]")))
     public ResponseEntity<?> bulkUploadCandidates(@RequestBody List<Map<String, Object>> candidateData) {
         try {
             List<Candidate> candidates = candidateService.bulkUploadCandidates(candidateData);
@@ -112,6 +119,7 @@ public class CandidateController {
     // Add skills to candidate
     @PostMapping("/{candidateId}/skills")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "AddCandidateSkill", value = "{\"skillId\":1,\"proficiencyLevelId\":2,\"yearsOfExperience\":3}")))
     public ResponseEntity<?> addCandidateSkill(@PathVariable Long candidateId,
             @RequestBody Map<String, Object> skillData) {
         try {
@@ -213,6 +221,7 @@ public class CandidateController {
     // Update candidate profile
     @PutMapping("/{candidateId}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Candidate.class), examples = @ExampleObject(name = "UpdateCandidate", value = "{\"firstName\":\"Alice\",\"lastName\":\"Anderson\",\"phone\":\"+919876543210\",\"currentLocation\":\"Mumbai\",\"totalExperience\":4,\"expectedSalary\":90000}")))
     public ResponseEntity<?> updateCandidate(@PathVariable Long candidateId, @RequestBody Candidate updatedCandidate) {
         try {
             Candidate candidate = candidateService.updateCandidate(candidateId, updatedCandidate);
@@ -292,6 +301,7 @@ public class CandidateController {
     // Link a candidate to a position (create application)
     @PostMapping("/{candidateId}/apply")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "ApplyCandidate", value = "{\"positionId\":1,\"cvId\":1}")))
     public ResponseEntity<?> applyCandidateToPosition(@PathVariable Long candidateId,
             @RequestBody Map<String, Object> body) {
         try {

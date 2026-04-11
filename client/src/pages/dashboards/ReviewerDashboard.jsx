@@ -131,12 +131,12 @@ const ReviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
+            {/* <Link
               to="/applications"
               className="mt-4 inline-block text-orange-600 hover:text-orange-800 font-medium text-sm"
             >
               View History →
-            </Link>
+            </Link> */}
           </div>
         </div>
 

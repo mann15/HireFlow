@@ -12,6 +12,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/employees")
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class EmployeeController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "CreateEmployee", value = "{\"candidateId\":1,\"positionId\":1,\"offerId\":1,\"designation\":\"Software Engineer\",\"department\":\"Engineering\",\"joiningDate\":\"2026-03-01\"}")))
     public ResponseEntity<?> createEmployee(@RequestBody Map<String, Object> employeeData) {
         try {
             Long candidateId = Long.valueOf(employeeData.get("candidateId").toString());
@@ -97,6 +102,7 @@ public class EmployeeController {
 
     @PutMapping("/{employeeId}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Employee.class), examples = @ExampleObject(name = "UpdateEmployee", value = "{\"employeeCode\":\"EMP-0001\",\"designation\":\"Senior Software Engineer\",\"department\":\"Engineering\",\"salary\":95000,\"status\":\"ACTIVE\",\"notes\":\"Promoted\",\"relievingDate\":\"2026-12-31\"}")))
     public ResponseEntity<?> updateEmployee(@PathVariable Long employeeId,
             @RequestBody Employee employeeData) {
         try {

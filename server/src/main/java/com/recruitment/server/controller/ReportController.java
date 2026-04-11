@@ -19,6 +19,10 @@ import com.recruitment.server.service.ReportService;
 
 import lombok.RequiredArgsConstructor;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor
@@ -35,6 +39,7 @@ public class ReportController {
     }
 
     @PostMapping("/custom")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = CustomReportRequest.class), examples = @ExampleObject(name = "CustomReport", value = "{\"startDate\":\"2026-01-01\",\"endDate\":\"2026-02-01\",\"positionIds\":[1,2],\"statuses\":[\"APPLIED\",\"SCREENING\"],\"skills\":[\"Java\",\"React\"],\"colleges\":[\"IIT\"],\"minExperience\":2,\"maxExperience\":6}")))
     public ResponseEntity<CustomReportResponse> runCustomReport(@RequestBody CustomReportRequest request) {
         return ResponseEntity.ok(reportService.getCustomReport(request));
     }

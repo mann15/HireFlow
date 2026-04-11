@@ -31,6 +31,10 @@ import java.util.stream.Collectors;
 import java.util.Map;
 import java.util.HashMap;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/positions")
 public class JobPositionController {
@@ -121,6 +125,7 @@ public class JobPositionController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = JobPosition.class), examples = @ExampleObject(name = "CreatePosition", value = "{\"jobTitle\":\"Backend Developer\",\"jobDescription\":\"Work on server-side Java services.\",\"department\":\"Engineering\",\"employmentType\":\"FULL_TIME\",\"experienceRequiredMin\":2,\"experienceRequiredMax\":6,\"salaryMin\":50000,\"salaryMax\":120000,\"totalPositions\":2,\"status\":\"OPEN\"}")))
     public ResponseEntity<JobPosition> createPosition(@RequestBody JobPosition jobPosition,
             Authentication authentication) {
         // Set the creating user based on authenticated principal
@@ -135,6 +140,7 @@ public class JobPositionController {
 
     @PutMapping("/{position_id}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = JobPosition.class), examples = @ExampleObject(name = "UpdatePosition", value = "{\"jobTitle\":\"Backend Developer\",\"jobDescription\":\"Updated description\",\"department\":\"Engineering\",\"employmentType\":\"FULL_TIME\",\"experienceRequiredMin\":3,\"experienceRequiredMax\":7,\"salaryMin\":60000,\"salaryMax\":130000,\"totalPositions\":3,\"status\":\"ON_HOLD\",\"closureReason\":\"Budget review\"}")))
     public ResponseEntity<?> updatePosition(@PathVariable("position_id") Long id, @RequestBody JobPosition jobDetails) {
         return jobRepository.findById(id)
                 .map(job -> {
@@ -258,6 +264,7 @@ public class JobPositionController {
 
     @PostMapping("/{position_id}/skills")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "AddPositionSkills", value = "{\"required\":[\"Java\",\"Spring Boot\"],\"preferred\":[\"React\"]}")))
     public ResponseEntity<?> addPositionSkills(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, List<String>> skillsData) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
@@ -338,6 +345,7 @@ public class JobPositionController {
 
     @PutMapping("/{position_id}/skills")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "UpdatePositionSkills", value = "{\"required\":[\"Java\",\"Spring Boot\"],\"preferred\":[\"React\"]}")))
     public ResponseEntity<?> updatePositionSkills(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, List<String>> skillsData) {
         return addPositionSkills(positionId, skillsData);
@@ -346,6 +354,7 @@ public class JobPositionController {
     // Position closing endpoint
     @PostMapping("/{position_id}/close")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "ClosePosition", value = "{\"reason\":\"Position filled\",\"selectedCandidate\":1}")))
     public ResponseEntity<?> closePosition(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, Object> closeData) {
         String reason = closeData.get("reason") != null ? closeData.get("reason").toString().trim() : "";
@@ -377,6 +386,7 @@ public class JobPositionController {
     // Update position status with reason
     @PatchMapping("/{position_id}/status")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class), examples = @ExampleObject(name = "UpdateStatus", value = "{\"status\":\"ON_HOLD\",\"reason\":\"Budget approval pending\"}")))
     public ResponseEntity<?> updatePositionStatusWithReason(@PathVariable("position_id") Long positionId,
             @RequestBody Map<String, String> statusData) {
         Optional<JobPosition> position = jobRepository.findById(positionId);
@@ -427,6 +437,7 @@ public class JobPositionController {
 
     @PostMapping("/{position_id}/comments")
     @PreAuthorize("isAuthenticated()")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = CommentRequest.class), examples = @ExampleObject(name = "AddComment", value = "{\"userId\":1,\"comment\":\"Please review this position\"}")))
     public ResponseEntity<?> addCommentToPosition(@PathVariable Long position_id,
             @RequestBody CommentRequest commentRequest) {
         try {

@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/roles")
 public class RoleController {
@@ -34,12 +38,14 @@ public class RoleController {
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Role.class), examples = @ExampleObject(name = "CreateRole", value = "{\"roleName\":\"VIEWER\"}")))
     public Role createRole(@RequestBody Role role) {
         return roleService.createRole(role);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PutMapping("/{roleId}")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Role.class), examples = @ExampleObject(name = "UpdateRole", value = "{\"roleName\":\"VIEWER\"}")))
     public ResponseEntity<Role> updateRole(@PathVariable Long roleId, @RequestBody Role role) {
         Role updated = roleService.updateRole(roleId, role);
         if (updated != null) {

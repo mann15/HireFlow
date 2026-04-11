@@ -6,6 +6,7 @@ import {
   showError,
   showSuccess,
 } from "../../utils/toastUtils";
+import { btnPrimaryMd } from "../../utils/buttonStyles";
 
 const MatchingCandidates = ({ positionId }) => {
   const [candidates, setCandidates] = useState([]);
@@ -37,7 +38,7 @@ const MatchingCandidates = ({ positionId }) => {
         linkedCandidateIds = new Set(
           positionCandidates
             .map((p) => p.candidateId ?? p.candidate?.candidateId ?? p.id)
-            .filter(Boolean)
+            .filter(Boolean),
         );
       } catch (posErr) {
         console.warn("Unable to fetch applications for filtering", posErr);
@@ -73,7 +74,7 @@ const MatchingCandidates = ({ positionId }) => {
         linkedCandidateIds = new Set(
           positionCandidates
             .map((p) => p.candidateId ?? p.candidate?.candidateId ?? p.id)
-            .filter(Boolean)
+            .filter(Boolean),
         );
       } catch (posErr) {
         console.warn("Unable to fetch position for linked candidates", posErr);
@@ -81,7 +82,7 @@ const MatchingCandidates = ({ positionId }) => {
 
       // Also exclude candidates already in the matching list
       const matchingIds = new Set(
-        candidates.map((c) => c.candidate.candidateId)
+        candidates.map((c) => c.candidate.candidateId),
       );
 
       const unlinkedCandidates = data.filter((candidate) => {
@@ -252,7 +253,7 @@ const MatchingCandidates = ({ positionId }) => {
                 <div className="flex flex-col items-end gap-2">
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold ${getQualityColor(
-                      item.matchQuality
+                      item.matchQuality,
                     )}`}
                   >
                     {item.matchQuality}
@@ -309,7 +310,7 @@ const MatchingCandidates = ({ positionId }) => {
                     handleLinkCandidate(item.candidate.candidateId)
                   }
                   disabled={linking}
-                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+                  className={`${btnPrimaryMd} text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition`}
                 >
                   {linking ? "Linking..." : "Link to Position"}
                 </button>
@@ -380,7 +381,7 @@ const MatchingCandidates = ({ positionId }) => {
                 let sorted = [...filtered].sort((a, b) => {
                   if (allCandidateSort === "name") {
                     return `${a.firstName} ${a.lastName}`.localeCompare(
-                      `${b.firstName} ${b.lastName}`
+                      `${b.firstName} ${b.lastName}`,
                     );
                   } else if (allCandidateSort === "experience") {
                     return (b.totalExperience || 0) - (a.totalExperience || 0);
@@ -431,7 +432,7 @@ const MatchingCandidates = ({ positionId }) => {
                             handleLinkCandidate(candidate.candidateId)
                           }
                           disabled={linking}
-                          className="px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition whitespace-nowrap"
+                          className={`${btnPrimaryMd} text-sm rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition whitespace-nowrap`}
                         >
                           {linking ? "Linking..." : "Link"}
                         </button>

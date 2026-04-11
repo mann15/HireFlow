@@ -16,6 +16,11 @@ import CVReviewPanel from "../../components/review/CVReviewPanel";
 import FinalSelectionPanel from "../../components/applications/FinalSelectionPanel";
 import { FiArrowLeft } from "react-icons/fi";
 import { showError } from "../../utils/toastUtils";
+import {
+  btnPrimaryMd,
+  btnSuccessMd,
+  btnDangerMd,
+} from "../../utils/buttonStyles";
 
 const ApplicationDetailsPage = () => {
   const dispatch = useDispatch();
@@ -23,7 +28,7 @@ const ApplicationDetailsPage = () => {
   const navigate = useNavigate();
   const { currentUser } = useSelector((state) => state.user);
   const { currentApplication, loading } = useSelector(
-    (state) => state.application
+    (state) => state.application,
   );
   const userRole = currentUser?.role?.toUpperCase();
   const isCandidate = userRole === "CANDIDATE";
@@ -90,7 +95,7 @@ const ApplicationDetailsPage = () => {
             onClick={() =>
               navigate(isCandidate ? "/candidate/dashboard" : "/applications")
             }
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className={`${btnPrimaryMd} rounded-lg`}
           >
             Go Back
           </button>
@@ -211,11 +216,11 @@ const ApplicationDetailsPage = () => {
                       const isCompleted =
                         (step.stage === "APPLIED" &&
                           ["SCREENING", "INTERVIEW", "SELECTED"].includes(
-                            application.status
+                            application.status,
                           )) ||
                         (step.stage === "SCREENING" &&
                           ["INTERVIEW", "SELECTED"].includes(
-                            application.status
+                            application.status,
                           )) ||
                         (step.stage === "INTERVIEW" &&
                           application.status === "SELECTED");
@@ -228,8 +233,8 @@ const ApplicationDetailsPage = () => {
                                 isActive
                                   ? step.activeClass
                                   : isCompleted
-                                  ? step.completedClass
-                                  : "bg-gray-200 text-gray-500"
+                                    ? step.completedClass
+                                    : "bg-gray-200 text-gray-500"
                               }`}
                             >
                               {index + 1}
@@ -239,8 +244,8 @@ const ApplicationDetailsPage = () => {
                                 isActive
                                   ? step.textActive
                                   : isCompleted
-                                  ? step.textCompleted
-                                  : "text-gray-400"
+                                    ? step.textCompleted
+                                    : "text-gray-400"
                               }`}
                             >
                               {step.label}
@@ -272,11 +277,11 @@ const ApplicationDetailsPage = () => {
                     </h3>
                     <div className="flex flex-wrap gap-3">
                       {["SCREENING", "INTERVIEW"].includes(
-                        application.status
+                        application.status,
                       ) && (
                         <button
                           onClick={() => setShowScheduleInterview(true)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                          className={`${btnPrimaryMd} rounded-md`}
                         >
                           Schedule Interview
                         </button>
@@ -285,13 +290,13 @@ const ApplicationDetailsPage = () => {
                         <>
                           <button
                             onClick={() => setShowGenerateOffer(true)}
-                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                            className={`${btnSuccessMd} rounded-md`}
                           >
                             Generate Offer
                           </button>
                           <button
                             onClick={() => setShowUploadDocument(true)}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                            className={`${btnPrimaryMd} rounded-md`}
                           >
                             Upload Document
                           </button>
@@ -306,7 +311,7 @@ const ApplicationDetailsPage = () => {
                       {application.status === "SELECTED" && (
                         <button
                           onClick={() => setShowCreateEmployee(true)}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                          className={`${btnSuccessMd} rounded-md`}
                         >
                           Create Employee Record
                         </button>
@@ -337,7 +342,7 @@ const ApplicationDetailsPage = () => {
                   <div className="mb-4">
                     <button
                       onClick={() => setShowScheduleInterview(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      className={`${btnPrimaryMd} rounded-md`}
                     >
                       Schedule New Interview
                     </button>

@@ -12,6 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+
 @RestController
 @RequestMapping("/api/skills")
 public class SkillsController {
@@ -37,6 +41,7 @@ public class SkillsController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Skills.class), examples = @ExampleObject(name = "CreateSkill", value = "{\"skillName\":\"Spring Boot\",\"category\":\"Backend\"}")))
     public ResponseEntity<?> createSkill(@RequestBody Skills skill) {
         try {
             if (skill.getSkillName() == null || skill.getSkillName().trim().isEmpty()) {
@@ -61,6 +66,7 @@ public class SkillsController {
 
     @PutMapping("/{skillId}")
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR')")
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, content = @Content(mediaType = "application/json", schema = @Schema(implementation = Skills.class), examples = @ExampleObject(name = "UpdateSkill", value = "{\"skillName\":\"Spring Boot\",\"category\":\"Backend\"}")))
     public ResponseEntity<Skills> updateSkill(@PathVariable Long skillId, @RequestBody Skills skill) {
         Skills updated = skillsService.updateSkill(skillId, skill);
         if (updated != null) {
