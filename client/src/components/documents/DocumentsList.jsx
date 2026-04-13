@@ -44,7 +44,7 @@ const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
       await verifyDocument(
         verifyModal.document.id,
         verifyData.status,
-        verifyData.remarks
+        verifyData.remarks,
       );
       showSuccess("Document status updated successfully!");
       setVerifyModal({ show: false, document: null });
@@ -69,6 +69,16 @@ const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
+  const getDocumentTypeName = (doc) =>
+    doc?.documentTypeName || doc?.documentType?.name || "Unknown Document";
+
+  const getUploadedDate = (doc) => doc?.uploadedDate || doc?.uploadedAt;
+
+  const getVerificationStatus = (doc) =>
+    doc?.verificationStatus || doc?.status || "PENDING";
+
+  const getVerifiedDate = (doc) => doc?.verifiedDate || doc?.verifiedAt;
+
   if (loading) {
     return <div className="text-center py-8">Loading documents...</div>;
   }
@@ -88,21 +98,21 @@ const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {doc.documentTypeName}
+                    {getDocumentTypeName(doc)}
                   </h3>
                   <p className="text-sm text-gray-600">
                     Uploaded:{" "}
-                    {doc.uploadedDate
-                      ? format(new Date(doc.uploadedDate), "PPP")
+                    {getUploadedDate(doc)
+                      ? format(new Date(getUploadedDate(doc)), "PPP")
                       : "N/A"}
                   </p>
                 </div>
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    doc.verificationStatus
+                    getVerificationStatus(doc),
                   )}`}
                 >
-                  {doc.verificationStatus}
+                  {getVerificationStatus(doc)}
                 </span>
               </div>
 
@@ -127,13 +137,13 @@ const DocumentsList = ({ applicationId, isHR = false, onUpdate }) => {
                 </div>
               )}
 
-              {doc.verifiedDate && (
+              {getVerifiedDate(doc) && (
                 <p className="text-xs text-gray-500">
-                  Verified on: {format(new Date(doc.verifiedDate), "PPP")}
+                  Verified on: {format(new Date(getVerifiedDate(doc)), "PPP")}
                 </p>
               )}
 
-              {isHR && doc.verificationStatus === "PENDING" && (
+              {isHR && getVerificationStatus(doc) === "PENDING" && (
                 <div className="mt-3 pt-3 border-t">
                   <button
                     onClick={() =>

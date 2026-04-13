@@ -26,6 +26,16 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
   const [selecting, setSelecting] = useState(false);
   const [creatingEmployee, setCreatingEmployee] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+  const resolvedApplicationId = application?.applicationId || application?.id;
+  const resolvedCandidateId =
+    application?.candidate?.candidateId || application?.candidateId;
+  const resolvedPositionId =
+    application?.position?.positionId || application?.positionId;
+  const resolvedPositionTitle =
+    application?.positionTitle || application?.position?.jobTitle;
+  const resolvedCandidateName =
+    application?.candidateName ||
+    `${application?.candidate?.firstName || ""} ${application?.candidate?.lastName || ""}`.trim();
 
   useEffect(() => {
     if (application?.backgroundVerificationStatus) {
@@ -39,12 +49,16 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
   const handleBgSave = async () => {
     setSavingBg(true);
     try {
-      await updateBackgroundVerification(application.id, bgStatus, bgRemarks);
+      await updateBackgroundVerification(
+        resolvedApplicationId,
+        bgStatus,
+        bgRemarks,
+      );
       showSuccess("Background verification status updated");
       if (onRefresh) onRefresh();
     } catch (err) {
       showError(
-        getErrorMessage(err, "Failed to update background verification status")
+        getErrorMessage(err, "Failed to update background verification status"),
       );
     } finally {
       setSavingBg(false);
@@ -59,8 +73,8 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
 
     setSelecting(true);
     try {
-      await selectCandidate(application.id);
-      await confirmJoining(application.id, joiningDate);
+      await selectCandidate(resolvedApplicationId);
+      await confirmJoining(resolvedApplicationId, joiningDate);
       showSuccess("Candidate marked as selected with joining date.");
       if (onRefresh) onRefresh();
     } catch (err) {
@@ -78,9 +92,9 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
     setCreatingEmployee(true);
     try {
       await createEmployee({
-        candidateId: application.candidateId,
-        positionId: application.positionId,
-        designation: application.positionTitle,
+        candidateId: resolvedCandidateId,
+        positionId: resolvedPositionId,
+        designation: resolvedPositionTitle,
         department: application.department || "Engineering",
         joiningDate,
         salary: application.offerSalary || 0,
@@ -99,12 +113,12 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DocumentUpload
-          applicationId={application.id}
-          candidateId={application.candidateId}
+          applicationId={resolvedApplicationId}
+          candidateId={resolvedCandidateId}
           onUploadComplete={onRefresh}
         />
         <DocumentsList
-          applicationId={application.id}
+          applicationId={resolvedApplicationId}
           isHR={true}
           onUpdate={onRefresh}
         />
@@ -205,16 +219,16 @@ const FinalSelectionPanel = ({ application, onRefresh }) => {
           </div>
         </div>
 
-        <OffersList applicationId={application.id} isHR={true} />
+        <OffersList applicationId={resolvedApplicationId} isHR={true} />
       </div>
 
       {showOffer && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <GenerateOffer
-              applicationId={application.id}
-              candidateName={application.candidateName}
-              positionTitle={application.positionTitle}
+              applicationId={resolvedApplicationId}
+              candidateName={resolvedCandidateName}
+              positionTitle={resolvedPositionTitle}
               onComplete={() => {
                 setShowOffer(false);
                 if (onRefresh) onRefresh();

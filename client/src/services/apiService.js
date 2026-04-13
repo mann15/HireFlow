@@ -32,7 +32,7 @@ export const positionService = {
   closePosition: async (positionId, closeData) => {
     const response = await api.post(
       `/positions/${positionId}/close`,
-      closeData
+      closeData,
     );
     return response.data;
   },
@@ -70,7 +70,7 @@ export const positionService = {
   addPositionSkills: async (positionId, skillsData) => {
     const response = await api.post(
       `/positions/${positionId}/skills`,
-      skillsData
+      skillsData,
     );
     return response.data;
   },
@@ -86,7 +86,7 @@ export const positionService = {
   // Assign reviewers to position
   assignReviewer: async (positionId, reviewerId) => {
     const response = await api.put(
-      `/positions/${positionId}/assign-reviewer?reviewerId=${reviewerId}`
+      `/positions/${positionId}/assign-reviewer?reviewerId=${reviewerId}`,
     );
     return response.data;
   },
@@ -170,7 +170,7 @@ export const candidateService = {
   addSkills: async (candidateId, skillData) => {
     const response = await api.post(
       `/candidates/${candidateId}/skills`,
-      skillData
+      skillData,
     );
     return response.data;
   },
@@ -227,7 +227,7 @@ export const applicationService = {
   // Move application to screening
   moveToScreening: async (applicationId) => {
     const response = await api.put(
-      `/applications/${applicationId}/move-to-screening`
+      `/applications/${applicationId}/move-to-screening`,
     );
     return response.data;
   },
@@ -235,7 +235,7 @@ export const applicationService = {
   // Move application to interview
   moveToInterview: async (applicationId) => {
     const response = await api.put(
-      `/applications/${applicationId}/move-to-interview`
+      `/applications/${applicationId}/move-to-interview`,
     );
     return response.data;
   },
@@ -243,7 +243,7 @@ export const applicationService = {
   // Put application on hold
   putOnHold: async (applicationId, reason) => {
     const response = await api.put(
-      `/applications/${applicationId}/hold?reason=${encodeURIComponent(reason)}`
+      `/applications/${applicationId}/hold?reason=${encodeURIComponent(reason)}`,
     );
     return response.data;
   },
@@ -252,8 +252,8 @@ export const applicationService = {
   rejectApplication: async (applicationId, reason) => {
     const response = await api.put(
       `/applications/${applicationId}/reject?reason=${encodeURIComponent(
-        reason
-      )}`
+        reason,
+      )}`,
     );
     return response.data;
   },
@@ -301,8 +301,8 @@ export const interviewService = {
   rescheduleInterview: async (interviewId, newDate) => {
     const response = await api.put(
       `/interviews/${interviewId}/reschedule?newDate=${encodeURIComponent(
-        newDate
-      )}`
+        newDate,
+      )}`,
     );
     return response.data;
   },
@@ -323,7 +323,7 @@ export const interviewService = {
   defineRounds: async (positionId, rounds) => {
     const response = await api.post(
       `/interviews/rounds/define?positionId=${positionId}`,
-      rounds
+      rounds,
     );
     return response.data;
   },
@@ -357,7 +357,7 @@ export const feedbackService = {
   // Get screening feedback
   getScreeningFeedback: async (applicationId) => {
     const response = await api.get(
-      `/screening/feedback/application/${applicationId}`
+      `/screening/feedback/application/${applicationId}`,
     );
     return response.data;
   },
@@ -365,7 +365,7 @@ export const feedbackService = {
   // Get latest screening feedback
   getLatestScreeningFeedback: async (applicationId) => {
     const response = await api.get(
-      `/screening/feedback/application/${applicationId}/latest`
+      `/screening/feedback/application/${applicationId}/latest`,
     );
     return response.data;
   },
@@ -379,7 +379,7 @@ export const feedbackService = {
   // Get screening comments
   getScreeningComments: async (applicationId) => {
     const response = await api.get(
-      `/screening/comments/application/${applicationId}`
+      `/screening/comments/application/${applicationId}`,
     );
     return response.data;
   },
@@ -388,7 +388,7 @@ export const feedbackService = {
   submitInterviewFeedback: async (interviewId, feedbackData) => {
     const response = await api.post(
       `/interviews/${interviewId}/feedback`,
-      feedbackData
+      feedbackData,
     );
     return response.data;
   },
@@ -402,7 +402,7 @@ export const feedbackService = {
   // Delete interview feedback
   deleteInterviewFeedback: async (interviewId, feedbackId) => {
     const response = await api.delete(
-      `/interviews/${interviewId}/feedback/${feedbackId}`
+      `/interviews/${interviewId}/feedback/${feedbackId}`,
     );
     return response.data;
   },
@@ -411,7 +411,7 @@ export const feedbackService = {
   updateInterviewFeedback: async (interviewId, feedbackId, feedbackData) => {
     const response = await api.put(
       `/interviews/${interviewId}/feedback/${feedbackId}`,
-      feedbackData
+      feedbackData,
     );
     return response.data;
   },
@@ -419,7 +419,7 @@ export const feedbackService = {
   // Check candidate history
   checkCandidateHistory: async (applicationId) => {
     const response = await api.post(
-      `/screening/application/${applicationId}/check-history`
+      `/screening/application/${applicationId}/check-history`,
     );
     return response.data;
   },
@@ -427,7 +427,7 @@ export const feedbackService = {
   // Get history notifications
   getHistoryNotifications: async (applicationId) => {
     const response = await api.get(
-      `/screening/notifications/application/${applicationId}`
+      `/screening/notifications/application/${applicationId}`,
     );
     return response.data;
   },
@@ -504,7 +504,7 @@ export const offerService = {
   // Reject offer
   rejectOffer: async (offerId, reason) => {
     const response = await api.put(
-      `/offers/${offerId}/reject?reason=${encodeURIComponent(reason)}`
+      `/offers/${offerId}/reject?reason=${encodeURIComponent(reason)}`,
     );
     return response.data;
   },
@@ -542,7 +542,7 @@ export const reportService = {
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
     const response = await api.get(
-      `/reports/summary${params.toString() ? "?" + params.toString() : ""}`
+      `/reports/summary${params.toString() ? "?" + params.toString() : ""}`,
     );
     return response.data;
   },
@@ -652,7 +652,7 @@ export const notificationService = {
   // Mark as read
   markAsRead: async (notificationId) => {
     const response = await api.put(
-      `/notifications/${notificationId}/mark-read`
+      `/notifications/${notificationId}/mark-read`,
     );
     return response.data;
   },
@@ -705,6 +705,14 @@ export const reviewService = {
   // Get reviews for application
   getApplicationReviews: async (applicationId) => {
     const response = await api.get(`/applications/${applicationId}/reviews`);
+    return response.data;
+  },
+
+  // Get positions assigned to a reviewer
+  getPositionsByReviewer: async (reviewerId) => {
+    const response = await api.get(
+      `/position-reviewers/reviewer/${reviewerId}`,
+    );
     return response.data;
   },
 

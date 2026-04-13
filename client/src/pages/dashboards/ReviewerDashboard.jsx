@@ -1,13 +1,39 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   applicationService,
   positionService,
   reviewService,
 } from "../../services/apiService";
 import Loader from "../../components/Loader";
+import { APPLICATION_STATUS } from "../../utils/constants";
+
+const isScreeningApplication = (application) => {
+  const status = application?.status;
+  const currentStage = application?.currentStage;
+
+  return (
+    status === APPLICATION_STATUS.APPLIED ||
+    status === APPLICATION_STATUS.SCREENING ||
+    status === "SCREENING_PENDING" ||
+    currentStage?.includes("SCREENING") ||
+    currentStage?.includes("REVIEW")
+  );
+};
+
+const normalizeRole = (role) => {
+  const rawRole =
+    typeof role === "object" ? role?.roleName || role?.name : role;
+  return rawRole
+    ? String(rawRole)
+        .replace(/^ROLE_/, "")
+        .toUpperCase()
+    : rawRole;
+};
 
 const ReviewerDashboard = () => {
+  const { currentUser } = useSelector((state) => state.user);
   const [stats, setStats] = useState({
     pendingScreenings: 0,
     assignedPositions: 0,
@@ -26,24 +52,56 @@ const ReviewerDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [applications, positions, reviews] = await Promise.all([
-        applicationService.getApplications().catch(() => []),
-        positionService.getPositions().catch(() => []),
+      const role = normalizeRole(currentUser?.role || currentUser?.roleName);
+      const reviewerId =
+        currentUser?.userId || currentUser?.id || currentUser?.user?.id;
+
+      const [assignedPositions, reviews] = await Promise.all([
+        role === "REVIEWER"
+          ? reviewService.getPositionsByReviewer(reviewerId).catch(() => [])
+          : Promise.resolve([]),
         reviewService.getReviews
           ? reviewService.getReviews().catch(() => [])
           : Promise.resolve([]),
       ]);
 
+      const applicationLists =
+        Array.isArray(assignedPositions) && assignedPositions.length > 0
+          ? await Promise.all(
+              assignedPositions.map((assignment) =>
+                applicationService
+                  .getApplications({
+                    positionId:
+                      assignment.positionId || assignment.position?.positionId,
+                  })
+                  .catch(() => []),
+              ),
+            )
+          : [await applicationService.getApplications().catch(() => [])];
+
+      const uniqueApplications = new Map();
+      applicationLists.flat().forEach((application) => {
+        if (application?.applicationId != null) {
+          uniqueApplications.set(application.applicationId, application);
+        }
+      });
+
+      const applications = Array.from(uniqueApplications.values());
+      const positions =
+        Array.isArray(assignedPositions) && assignedPositions.length > 0
+          ? assignedPositions.map(
+              (assignment) => assignment.position || assignment,
+            )
+          : await positionService.getPositions().catch(() => []);
+
       setStats({
         pendingScreenings: Array.isArray(applications)
-          ? applications.filter((a) => a.status === "SCREENING_PENDING").length
+          ? applications.filter(isScreeningApplication).length
           : 0,
-        assignedPositions: Array.isArray(positions)
-          ? positions.filter((p) => p.status === "OPEN").length
-          : 0,
+        assignedPositions: Array.isArray(positions) ? positions.length : 0,
         completedReviews: Array.isArray(reviews) ? reviews.length : 0,
         assignedApplications: Array.isArray(applications)
-          ? applications.filter((a) => a.reviewerAssigned === true).length
+          ? applications.filter(isScreeningApplication).length
           : 0,
       });
     } catch (err) {
@@ -98,10 +156,10 @@ const ReviewerDashboard = () => {
               </div>
             </div>
             <Link
-              to="/applications"
+              to="/review/screening"
               className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium text-sm"
             >
-              View Details →
+              View Assigned Applications →
             </Link>
           </div>
 
@@ -140,59 +198,33 @@ const ReviewerDashboard = () => {
           </div>
         </div>
 
-        {/* Task Center */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <div className="flex items-center justify-between mb-6 border-b pb-4">
-            <h2 className="text-xl font-bold flex items-center">
-              <svg className="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-              My Task Center
-            </h2>
-          </div>
-
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3">Action Required: Pending Screenings</h3>
-              {stats.pendingScreenings > 0 ? (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium text-red-800">You have {stats.pendingScreenings} candidate(s) waiting for screening review.</h4>
-                    <p className="text-sm text-red-600 mt-1">Reviewing these promptly ensures a smooth hiring pipeline.</p>
-                  </div>
-                  <Link
-                    to="/review/screening"
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition shadow-sm whitespace-nowrap"
-                  >
-                    Start Screening
-                  </Link>
-                </div>
-              ) : (
-                <div className="flex items-center text-green-600 bg-green-50 p-3 rounded-lg border border-green-200 text-sm">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                  All caught up! No pending screenings required.
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Ongoing Applications</h3>
-              {stats.assignedApplications > 0 ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium text-blue-800">You are tracking {stats.assignedApplications} active application(s).</h4>
-                  </div>
-                  <Link
-                    to="/applications"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition shadow-sm whitespace-nowrap"
-                  >
-                    View All
-                  </Link>
-                </div>
-              ) : (
-                <div className="flex items-center text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
-                  You do not have any active applications assigned to you right now.
-                </div>
-              )}
-            </div>
+        {/* Quick Actions */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              to="/review/screening"
+              className="p-4 border rounded-lg hover:bg-blue-50 transition"
+            >
+              <p className="font-medium">Review Candidates</p>
+              <p className="text-sm text-gray-500">
+                Screen pending applications
+              </p>
+            </Link>
+            <Link
+              to="/applications"
+              className="p-4 border rounded-lg hover:bg-green-50 transition"
+            >
+              <p className="font-medium">View Applications</p>
+              <p className="text-sm text-gray-500">All assigned applications</p>
+            </Link>
+            <Link
+              to="/candidates"
+              className="p-4 border rounded-lg hover:bg-purple-50 transition"
+            >
+              <p className="font-medium">Candidate Pool</p>
+              <p className="text-sm text-gray-500">Browse all candidates</p>
+            </Link>
           </div>
         </div>
       </div>

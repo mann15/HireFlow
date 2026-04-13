@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { interviewService, candidateService } from "../../services/apiService";
+import { interviewService } from "../../services/apiService";
+import { INTERVIEW_STATUS } from "../../utils/constants";
 import Loader from "../../components/Loader";
 
 const InterviewerDashboard = () => {
@@ -18,34 +19,67 @@ const InterviewerDashboard = () => {
     loadDashboardData();
   }, []);
 
+  const unwrapList = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.content)) return value.content;
+    return [];
+  };
+
+  const formatInterviewDate = (value) => {
+    if (!value) return "N/A";
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
+  };
+
+  const getInterviewCandidateName = (interview) => {
+    const firstName = interview?.application?.candidate?.firstName;
+    const lastName = interview?.application?.candidate?.lastName;
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+    return fullName || interview?.candidateName || "N/A";
+  };
+
+  const getInterviewPositionTitle = (interview) => {
+    return (
+      interview?.application?.position?.jobTitle ||
+      interview?.position?.jobTitle ||
+      interview?.position ||
+      "N/A"
+    );
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const interviews = await interviewService
-        .getMyInterviews()
-        .catch(() => []);
+      const interviews = unwrapList(
+        await interviewService.getMyInterviews().catch(() => []),
+      );
 
       const today = new Date().toDateString();
-      const todayInterviews = Array.isArray(interviews)
-        ? interviews.filter((i) => {
-            const interviewDate = new Date(i.scheduledDate).toDateString();
-            return interviewDate === today;
-          })
-        : [];
+      const todayInterviews = interviews.filter((interview) => {
+        const interviewDate = new Date(interview.interviewDate);
+        return (
+          !Number.isNaN(interviewDate.getTime()) &&
+          interviewDate.toDateString() === today
+        );
+      });
 
-      const scheduled = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "SCHEDULED")
-        : [];
+      const scheduled = interviews.filter(
+        (interview) => interview.status === INTERVIEW_STATUS.SCHEDULED,
+      );
 
-      const pending = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "SCHEDULED" && !i.feedback)
-        : [];
+      const pending = interviews.filter(
+        (interview) =>
+          interview.status === INTERVIEW_STATUS.SCHEDULED &&
+          !interview.feedback,
+      );
 
-      const completed = Array.isArray(interviews)
-        ? interviews.filter((i) => i.status === "COMPLETED")
-        : [];
+      const completed = interviews.filter(
+        (interview) => interview.status === INTERVIEW_STATUS.COMPLETED,
+      );
 
       setStats({
         scheduledInterviews: scheduled.length,
@@ -55,12 +89,12 @@ const InterviewerDashboard = () => {
       });
 
       setUpcomingInterviews(
-        scheduled.slice(0, 5).map((i) => ({
-          id: i.id,
-          candidateName: i.candidateName || "N/A",
-          position: i.position || "N/A",
-          scheduledDate: new Date(i.scheduledDate).toLocaleString(),
-        }))
+        scheduled.slice(0, 5).map((interview) => ({
+          id: interview.interviewId || interview.id,
+          candidateName: getInterviewCandidateName(interview),
+          position: getInterviewPositionTitle(interview),
+          scheduledDate: formatInterviewDate(interview.interviewDate),
+        })),
       );
     } catch (err) {
       console.error("Failed to load interviewer dashboard data:", err);
@@ -85,6 +119,15 @@ const InterviewerDashboard = () => {
 
         <h1 className="text-3xl font-bold mb-8">Interviewer Dashboard</h1>
 
+        <div className="mb-8">
+          <Link
+            to="/interviews/my"
+            className="inline-flex items-center px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            Open My Interviews
+          </Link>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
@@ -96,12 +139,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-blue-600 hover:text-blue-800 font-medium text-sm"
-            >
-              View Interviews →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -113,12 +150,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-orange-600 hover:text-orange-800 font-medium text-sm"
-            >
-              Add Feedback →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">
@@ -130,12 +161,6 @@ const InterviewerDashboard = () => {
                 </p>
               </div>
             </div>
-            <Link
-              to="/interviews/my"
-              className="mt-4 inline-block text-green-600 hover:text-green-800 font-medium text-sm"
-            >
-              View History →
-            </Link>
           </div>
 
           <div className="bg-white p-6 rounded-lg shadow">

@@ -4,13 +4,14 @@ import com.recruitment.server.model.*;
 import com.recruitment.server.repository.UserRepository;
 import com.recruitment.server.service.InterviewService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 
 import io.swagger.v3.oas.annotations.media.Content;
@@ -138,36 +139,45 @@ public class InterviewController {
     public ResponseEntity<?> scheduleBulkInterviews(@RequestBody Map<String, Object> bulkData,
             Authentication authentication) {
         try {
-            @SuppressWarnings("unchecked")
-            List<Long> applicationIds = (List<Long>) bulkData.get("applicationIds");
-            Long roundId = Long.valueOf(bulkData.get("roundId").toString());
-            LocalDateTime interviewDate = LocalDateTime.parse(bulkData.get("interviewDate").toString());
-            CandidateInterview.InterviewMode mode = CandidateInterview.InterviewMode
-                    .valueOf(bulkData.get("mode").toString());
-            String interviewLink = bulkData.get("interviewLink") != null
-                    ? bulkData.get("interviewLink").toString()
-                    : null;
+            List<Long> applicationIds = extractLongList(bulkData.get("applicationIds"));
+            List<Long> candidateIds = extractLongList(bulkData.get("candidateIds"));
 
-            List<Long> panelistIds = new ArrayList<>();
-            Object panelObj = bulkData.get("panelistIds");
-            if (panelObj instanceof List<?> list) {
-                for (Object o : list) {
-                    if (o instanceof Number n) {
-                        panelistIds.add(n.longValue());
-                    } else if (o != null) {
-                        try {
-                            panelistIds.add(Long.valueOf(o.toString()));
-                        } catch (NumberFormatException ignored) {
-                        }
-                    }
-                }
+            Long positionId = extractLong(bulkData.get("positionId"));
+            Long roundId = extractLong(bulkData.get("roundId"));
+            if (roundId == null) {
+                roundId = extractLong(bulkData.get("interviewRoundId"));
             }
+
+            LocalDateTime interviewDate = extractInterviewDate(bulkData);
+            if (interviewDate == null) {
+                throw new RuntimeException("interviewDate or schedule is required");
+            }
+
+            Object modeObj = bulkData.get("mode");
+            CandidateInterview.InterviewMode mode = modeObj != null
+                    ? CandidateInterview.InterviewMode.valueOf(modeObj.toString())
+                    : CandidateInterview.InterviewMode.IN_PERSON;
+
+            String interviewLink = extractString(bulkData.get("interviewLink"));
+
+            List<Long> panelistIds = extractLongList(bulkData.get("panelistIds"));
+
+            if ((applicationIds == null || applicationIds.isEmpty()) && candidateIds != null
+                    && !candidateIds.isEmpty()) {
+                applicationIds = interviewService.resolveApplicationIdsForBulkScheduling(positionId, candidateIds);
+            }
+
+            if (applicationIds == null || applicationIds.isEmpty()) {
+                throw new RuntimeException("applicationIds or candidateIds are required");
+            }
+
+            Long resolvedRoundId = interviewService.resolveBulkRoundId(positionId, roundId);
 
             User scheduledBy = userRepository.findByEmail(authentication.getName())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             List<CandidateInterview> interviews = interviewService.scheduleBulkInterviews(
-                    applicationIds, roundId, interviewDate, mode, interviewLink, panelistIds, scheduledBy);
+                    applicationIds, resolvedRoundId, interviewDate, mode, interviewLink, panelistIds, scheduledBy);
 
             return ResponseEntity.ok(Map.of(
                     "scheduled", interviews.size(),
@@ -175,6 +185,60 @@ public class InterviewController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+    }
+
+    private Long extractLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : Long.valueOf(text);
+    }
+
+    private List<Long> extractLongList(Object value) {
+        List<Long> ids = new ArrayList<>();
+        if (value instanceof List<?> list) {
+            for (Object item : list) {
+                Long id = extractLong(item);
+                if (id != null) {
+                    ids.add(id);
+                }
+            }
+        }
+        return ids;
+    }
+
+    private String extractString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private LocalDateTime extractInterviewDate(Map<String, Object> bulkData) {
+        Object interviewDateObj = bulkData.get("interviewDate");
+        if (interviewDateObj != null) {
+            return LocalDateTime.parse(interviewDateObj.toString());
+        }
+
+        Object scheduleObj = bulkData.get("schedule");
+        if (scheduleObj != null) {
+            return LocalDateTime.parse(scheduleObj.toString());
+        }
+
+        String eventDate = extractString(bulkData.get("eventDate"));
+        String eventTime = extractString(bulkData.get("eventTime"));
+        if (eventDate != null) {
+            LocalDate date = LocalDate.parse(eventDate);
+            LocalTime time = eventTime != null ? LocalTime.parse(eventTime) : LocalTime.MIDNIGHT;
+            return LocalDateTime.of(date, time);
+        }
+
+        return null;
     }
 
     @PutMapping("/{interviewId}/reschedule")
