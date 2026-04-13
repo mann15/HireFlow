@@ -51,7 +51,12 @@ public class CandidateController {
             return ResponseEntity.status(HttpStatus.CREATED).body(createdCandidate);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Failed to create candidate: " + e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
+            if (msg.contains("UNIQUE KEY constraint") || msg.contains("duplicate key") || msg.contains("ConstraintViolation")) {
+                error.put("error", "A candidate profile or user account with this email address already exists.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            }
+            error.put("error", "Failed to create candidate: " + msg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -73,7 +78,12 @@ public class CandidateController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Failed to upload CV: " + e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
+            if (msg.contains("UNIQUE KEY constraint") || msg.contains("duplicate key") || msg.contains("ConstraintViolation")) {
+                error.put("error", "This CV has already been uploaded for this candidate/position.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            }
+            error.put("error", "Failed to upload CV: " + msg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -91,7 +101,12 @@ public class CandidateController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Failed to bulk upload candidates: " + e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
+            if (msg.contains("UNIQUE KEY constraint") || msg.contains("duplicate key") || msg.contains("ConstraintViolation")) {
+                error.put("error", "One or more candidates in the bulk upload have a duplicated email address.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            }
+            error.put("error", "Failed to bulk upload candidates: " + msg);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
@@ -111,7 +126,31 @@ public class CandidateController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         } catch (Exception e) {
             Map<String, String> error = new HashMap<>();
-            error.put("error", "Failed to create candidate from CV: " + e.getMessage());
+            String msg = e.getMessage() != null ? e.getMessage() : "Unknown error occurred";
+            if (msg.contains("UNIQUE KEY constraint") || msg.contains("duplicate key") || msg.contains("ConstraintViolation")) {
+                error.put("error", "A candidate profile or CV exactly matching these details already exists.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            }
+            error.put("error", "Failed to create candidate from CV: " + msg);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+
+    // Extract candidate info from uploaded CV without saving
+    @PostMapping("/extract-cv")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','RECRUITER','HR','CANDIDATE')")
+    public ResponseEntity<?> extractCandidateFromCV(@RequestParam("file") MultipartFile file) {
+        try {
+            Map<String, Object> result = candidateService.extractCandidateInfoFromCV(file);
+            return ResponseEntity.status(HttpStatus.OK).body(result);
+        } catch (IOException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to process CV: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        } catch (Exception e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to extract candidate info: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }

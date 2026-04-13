@@ -76,11 +76,6 @@ const InterviewFeedback = ({
     "STRONG_NO_HIRE",
   ];
 
-  const stages = [
-    { value: "PANELIST", label: "Panelist / Interviewer" },
-    { value: "HR", label: "HR" },
-    { value: "REVIEWER", label: "Reviewer" },
-  ];
 
   const updateTech = (index, field, value) => {
     const next = [...techRatings];
@@ -170,28 +165,7 @@ const InterviewFeedback = ({
 
       <form onSubmit={handleSubmit}>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Stage / Role *
-              </label>
-              <select
-                value={formData.stage}
-                onChange={(e) =>
-                  setFormData({ ...formData, stage: e.target.value })
-                }
-                className="w-full border border-gray-300 rounded-md px-3 py-2"
-                required
-              >
-                {stages.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Automated score controls removed (manual-only scoring) */}
-          </div>
+          {/* Stage is set automatically to PANELIST for interviewer feedback */}
 
           <RatingInput
             label="Overall Rating"

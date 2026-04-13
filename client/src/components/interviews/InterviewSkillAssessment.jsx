@@ -31,15 +31,21 @@ const InterviewSkillAssessment = ({ interviewId, applicationId, onSubmit }) => {
       setCandidate(candidateData);
 
       // Load candidate skills
-      if (candidateData.skills) {
-        const skillsWithRating = candidateData.skills.map((skill) => ({
-          ...skill,
-          verified: skill.verified || false,
-          yearsOfExperience: skill.yearsOfExperience || 0,
+      const candidateSkillsList = candidateData.candidateSkills || candidateData.skills;
+      if (candidateSkillsList && Array.isArray(candidateSkillsList)) {
+        const skillsWithRating = candidateSkillsList.map((cs) => ({
+          ...cs,
+          id: cs.id,
+          skillName: cs.skill?.skillName || cs.skill?.name || "Unknown Skill",
+          proficiencyLevel: cs.proficiencyLevel?.levelName || cs.proficiencyLevel?.name || "",
+          verified: cs.verified || false,
+          yearsOfExperience: cs.yearsOfExperience || 0,
           rating: 0,
           comments: "",
         }));
         setSkills(skillsWithRating);
+      } else {
+        setSkills([]);
       }
     } catch (error) {
       console.error("Error loading data:", error);

@@ -117,7 +117,7 @@ const ReviewerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-8">
+    <div className="min-h-screen bg-gray-50 pb-8">
       <div className="container mx-auto px-4">
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">

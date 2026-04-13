@@ -47,7 +47,7 @@ const PositionsList = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 mt-20">
+    <div className="container mx-auto p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>

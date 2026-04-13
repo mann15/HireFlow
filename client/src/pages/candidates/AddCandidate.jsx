@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { candidateService } from "../../services/candidateService";
+import BulkUploadCandidates from "../../components/candidates/BulkUploadCandidates";
 
 const AddCandidate = () => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ const AddCandidate = () => {
   }, [candidateId]);
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8 border-b pb-4">
@@ -152,25 +153,8 @@ const AddCandidate = () => {
             )}
 
             {entryMode === 'bulk' ? (
-              <div className="text-center py-12 px-6">
-                <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Upload Excel Spreadsheet</h3>
-                <p className="text-gray-500 mb-8 max-w-md mx-auto">Upload an Excel (.xlsx or .xls) file to bulk import candidates. Ensure your columns match the required format: First Name, Last Name, Email, Phone.</p>
-                
-                <div className="max-w-xl mx-auto border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
-                  <div className="flex flex-col items-center">
-                    <svg className="w-10 h-10 text-gray-400 group-hover:text-blue-500 mb-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                    <p className="text-sm font-medium text-blue-600 group-hover:text-blue-700">Click to browse or drag & drop</p>
-                    <p className="text-xs text-gray-500 mt-1">XLSX, XLS (Max 5MB)</p>
-                  </div>
-                  <input type="file" accept=".xlsx, .xls" className="hidden" />
-                </div>
-                
-                <div className="mt-8">
-                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800 underline">Download Template</a>
-                </div>
+              <div className="py-6">
+                <BulkUploadCandidates onUploadComplete={() => navigate("/candidates")} />
               </div>
             ) : (
             <form onSubmit={handleSubmit} className="space-y-8">

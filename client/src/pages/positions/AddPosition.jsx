@@ -178,7 +178,7 @@ const AddPosition = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 mt-20">
+    <div className="container mx-auto p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">

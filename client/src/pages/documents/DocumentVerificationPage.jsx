@@ -2,7 +2,7 @@ import PendingDocumentsQueue from "../../components/documents/PendingDocumentsQu
 
 const DocumentVerificationPage = () => {
   return (
-    <div className="min-h-screen pt-24 px-6 bg-gray-50">
+    <div className="min-h-screen px-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">

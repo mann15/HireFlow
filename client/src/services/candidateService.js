@@ -295,4 +295,23 @@ export const candidateService = {
       throw error.response?.data || error.message;
     }
   },
+
+  // Extract candidate details from CV without saving to DB
+  extractCandidateFromCV: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await api.post(
+        `${CANDIDATE_API_BASE_URL}/extract-cv`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };

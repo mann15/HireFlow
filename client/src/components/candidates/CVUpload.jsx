@@ -58,38 +58,40 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
     try {
       let result;
       if (candidateId) {
+        // Upload immediately for existing candidate
         result = await candidateService.uploadCV(
           candidateId,
           positionId || null,
           file
         );
+        
+        console.log("CV upload result:", result);
+        setSuccess("CV uploaded successfully");
+        setFile(null);
+        setPositionId("");
+
+        if (result) {
+          if (result.candidate) setParsedCandidate(result.candidate);
+          else if (result.cv && result.cv.candidate)
+            setParsedCandidate(result.cv.candidate);
+          else setParsedCandidate(null);
+        }
+
+        if (onUploadComplete) {
+          onUploadComplete(result);
+        }
       } else {
-        // create candidate from CV
-        result = await candidateService.createCandidateFromCV(
-          positionId || null,
-          file
-        );
-      }
-
-      // result may contain { cv, candidate }
-      console.log("CV upload result:", result);
-      setSuccess("CV uploaded successfully");
-      setFile(null);
-      setPositionId("");
-
-      // Backend returns either { cv, candidate } for uploadCV or { candidate, cv, application } for createCandidateFromCV
-      if (result) {
-        if (result.candidate) setParsedCandidate(result.candidate);
-        else if (result.cv && result.cv.candidate)
-          setParsedCandidate(result.cv.candidate);
-        else setParsedCandidate(null);
-      }
-
-      if (onUploadComplete) {
-        onUploadComplete(result);
+        // Just extract data, do not create or save
+        result = await candidateService.extractCandidateFromCV(file);
+        setSuccess("CV parsed successfully. Please verify and save candidate details.");
+        
+        // Keep file in state for actual upload upon save
+        if (result && result.extractedData) {
+          setParsedCandidate(result.extractedData);
+        }
       }
     } catch (err) {
-      setError(err.error || "Failed to upload CV");
+      setError(err.error || "Failed to process CV");
     } finally {
       setLoading(false);
     }
@@ -102,17 +104,37 @@ const CVUpload = ({ candidateId, onUploadComplete }) => {
       setError(null);
       setSuccess(null);
 
+      let finalCandidate;
       if (parsedCandidate.candidateId) {
         // existing candidate - update
-        await candidateService.updateCandidate(
+        finalCandidate = await candidateService.updateCandidate(
           parsedCandidate.candidateId,
           parsedCandidate
         );
         setSuccess("Candidate updated successfully");
       } else {
-        const created = await candidateService.createCandidate(parsedCandidate);
-        setParsedCandidate(created);
+        // new candidate
+        finalCandidate = await candidateService.createCandidate(parsedCandidate);
+        setParsedCandidate(finalCandidate);
         setSuccess("Candidate created successfully");
+        
+        // Link CV to the newly created candidate
+        if (file) {
+          const cvResult = await candidateService.uploadCV(
+            finalCandidate.candidateId,
+            positionId || null,
+            file
+          );
+          setFile(null);
+          setPositionId("");
+          if (onUploadComplete) {
+             onUploadComplete({ candidate: finalCandidate, cv: cvResult.cv });
+          }
+        } else {
+          if (onUploadComplete) {
+             onUploadComplete({ candidate: finalCandidate });
+          }
+        }
       }
     } catch (e) {
       setError(e.error || "Failed to save candidate");

@@ -327,7 +327,7 @@ const ScheduleInterview = ({
                 >
                   <option value="">Select Round</option>
                   {rounds.map((round) => (
-                    <option key={round.id} value={round.id}>
+                    <option key={round.roundId || round.id} value={round.roundId || round.id}>
                       {round.roundName} - {round.roundType}
                     </option>
                   ))}

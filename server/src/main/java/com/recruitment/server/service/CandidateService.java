@@ -648,6 +648,67 @@ public class CandidateService {
                 return resp;
         }
 
+        // Extracts candidate info from CV without saving to DB
+        public Map<String, Object> extractCandidateInfoFromCV(MultipartFile file) throws IOException {
+                Map<String, Object> resp = new HashMap<>();
+
+                CVProcessingService.CVUploadResult uploadResult = cvProcessingService.processAndUpload(file, null, null);
+
+                // Try to parse JSON
+                Map<String, Object> parsed = null;
+                try {
+                        if (uploadResult.getExtractedJson() != null && !uploadResult.getExtractedJson().isBlank()) {
+                                com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+                                com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>> tr = new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {};
+                                parsed = om.readValue(uploadResult.getExtractedJson(), tr);
+                        }
+                } catch (Exception e) {
+                        // ignore
+                }
+
+                if (parsed == null)
+                        parsed = new HashMap<>();
+                
+                String rawText = uploadResult.getExtractedText() != null ? uploadResult.getExtractedText() : "";
+
+                if (parsed.get("email") == null) {
+                        String email = extractEmailFromText(rawText);
+                        if (email != null) parsed.put("email", email);
+                }
+                if (parsed.get("phone") == null) {
+                        String phone = extractPhoneFromText(rawText);
+                        if (phone != null) parsed.put("phone", phone);
+                }
+                if ((parsed.get("firstName") == null || parsed.get("lastName") == null) && parsed.get("name") == null) {
+                        String[] nameParts = extractNameFromText(rawText);
+                        if (nameParts != null) {
+                                parsed.put("firstName", nameParts[0]);
+                                if (nameParts.length > 1) parsed.put("lastName", nameParts[1]);
+                        }
+                }
+                if (parsed.get("linkedinUrl") == null) {
+                        String ln = extractUrlByKeyword(rawText, "linkedin.com");
+                        if (ln != null) parsed.put("linkedinUrl", ln);
+                }
+                if (parsed.get("githubUrl") == null) {
+                        String gh = extractUrlByKeyword(rawText, "github.com");
+                        if (gh != null) parsed.put("githubUrl", gh);
+                }
+                if (parsed.get("skills") == null) {
+                        List<String> skills = extractSkillsFromText(rawText);
+                        if (!skills.isEmpty()) parsed.put("skills", skills);
+                }
+
+                // Return the parsed data along with the file metadata so it can be associated later
+                resp.put("extractedData", parsed);
+                resp.put("cloudUrl", uploadResult.getCloudUrl());
+                resp.put("cloudPublicId", uploadResult.getCloudPublicId());
+                resp.put("extractedRawText", uploadResult.getExtractedText());
+                resp.put("extractedJsonText", uploadResult.getExtractedJson());
+
+                return resp;
+        }
+
         // Bulk upload candidates from Excel
         @Transactional(propagation = Propagation.NOT_SUPPORTED)
         public List<Candidate> bulkUploadCandidates(List<Map<String, Object>> candidateData) {

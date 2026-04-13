@@ -52,7 +52,7 @@ const ReviewerApplicationDetails = () => {
     application.currentStage?.includes("SCREENING");
 
   return (
-    <div className="min-h-screen pt-24 px-6 bg-gray-50">
+    <div className="min-h-screen px-6 bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <button

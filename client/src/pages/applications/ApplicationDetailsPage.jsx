@@ -14,6 +14,7 @@ import ScheduleInterview from "../../components/interviews/ScheduleInterview";
 import CreateEmployee from "../../components/employees/CreateEmployee";
 import CVReviewPanel from "../../components/review/CVReviewPanel";
 import FinalSelectionPanel from "../../components/applications/FinalSelectionPanel";
+import CandidateScorecard from "../../components/applications/CandidateScorecard";
 import { FiArrowLeft } from "react-icons/fi";
 import { showError } from "../../utils/toastUtils";
 import {
@@ -77,6 +78,7 @@ const ApplicationDetailsPage = () => {
       ]
     : [
         { id: "overview", label: "Overview" },
+        { id: "scorecard", label: "Scorecard" },
         { id: "review", label: "CV Review" },
         { id: "status", label: "Status Management" },
         { id: "interviews", label: "Interviews" },
@@ -329,6 +331,10 @@ const ApplicationDetailsPage = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === "scorecard" && !isCandidate && (
+              <CandidateScorecard applicationId={applicationId} />
             )}
 
             {activeTab === "review" && !isCandidate && (

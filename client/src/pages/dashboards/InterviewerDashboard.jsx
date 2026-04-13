@@ -26,13 +26,6 @@ const InterviewerDashboard = () => {
     return [];
   };
 
-  const formatInterviewDate = (value) => {
-    if (!value) return "N/A";
-
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
-  };
-
   const getInterviewCandidateName = (interview) => {
     const firstName = interview?.application?.candidate?.firstName;
     const lastName = interview?.application?.candidate?.lastName;
@@ -93,7 +86,8 @@ const InterviewerDashboard = () => {
           id: interview.interviewId || interview.id,
           candidateName: getInterviewCandidateName(interview),
           position: getInterviewPositionTitle(interview),
-          scheduledDate: formatInterviewDate(interview.interviewDate),
+          scheduledDate: interview.interviewDate,
+          interviewLink: interview.interviewLink,
         })),
       );
     } catch (err) {
@@ -109,7 +103,7 @@ const InterviewerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-24 pb-8">
+    <div className="min-h-screen bg-gray-50 pb-8">
       <div className="container mx-auto px-4">
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
@@ -202,19 +196,33 @@ const InterviewerDashboard = () => {
                     >
                       <div className="flex items-center space-x-4">
                         <div className="bg-white p-2 border rounded-md text-center min-w-[60px]">
-                          <span className="block text-xs text-gray-500">{new Date(interview.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="block text-xs text-gray-500"> {new Date(interview.scheduledDate).toLocaleDateString()} {new Date(interview.scheduledDate).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}</span>
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{interview.candidateName}</p>
                           <p className="text-sm text-gray-500">{interview.position}</p>
                         </div>
                       </div>
-                      <Link
-                        to={`/interviews/${interview.id}`}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition shadow-sm"
-                      >
-                        Join / Start
-                      </Link>
+                      {interview.interviewLink ? (
+                        <a
+                          href={interview.interviewLink.startsWith('http') ? interview.interviewLink : `https://${interview.interviewLink}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition shadow-sm whitespace-nowrap"
+                        >
+                          Join / Start
+                        </a>
+                      ) : (
+                        <Link
+                          to="/interviews/my"
+                          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium transition shadow-sm whitespace-nowrap"
+                        >
+                          Details
+                        </Link>
+                      )}
                     </div>
                   ))}
                 </div>

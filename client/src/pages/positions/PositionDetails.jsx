@@ -156,7 +156,7 @@ const PositionDetails = () => {
   // Simplified view for candidates - just show position details
   if (isCandidate) {
     return (
-      <div className="container mx-auto p-6 mt-20 max-w-7xl">
+      <div className="container mx-auto p-6  max-w-7xl">
         <button
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
           onClick={() => navigate("/positions")}
@@ -306,7 +306,7 @@ const PositionDetails = () => {
   const primaryColorDark = "var(--primary-700)";
 
   return (
-    <div className="container mx-auto p-6 mt-20 max-w-7xl">
+    <div className="container mx-auto p-6 max-w-7xl">
       <button
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
         onClick={() => navigate("/positions")}

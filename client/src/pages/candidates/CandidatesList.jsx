@@ -74,19 +74,19 @@ const CandidatesList = () => {
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-20">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Candidate Database
           </h1>
           <div className="flex gap-4">
-            <button
+            {/* <button
               onClick={() => setShowBulkUpload(!showBulkUpload)}
               className={`${btnSuccessMd} rounded-lg transition duration-200`}
             >
               {showBulkUpload ? "Hide Bulk Upload" : "Bulk Upload"}
-            </button>
+            </button> */}
             <button
               onClick={() => setShowCreateFromCV(!showCreateFromCV)}
               className={`${btnPrimaryMd} rounded-lg transition duration-200`}

@@ -60,13 +60,19 @@ const CVReviewPanel = ({ applicationId, onUpdate }) => {
       console.log(candidateData);
 
       // Load candidate skills with verification status
-      if (candidateData.skills) {
-        const skillsWithVerification = candidateData.skills.map((skill) => ({
-          ...skill,
-          verified: skill.verified || false,
-          yearsOfExperience: skill.yearsOfExperience || 0,
+      const candidateSkillsList = candidateData.candidateSkills || candidateData.skills;
+      if (candidateSkillsList && Array.isArray(candidateSkillsList)) {
+        const skillsWithVerification = candidateSkillsList.map((cs) => ({
+          ...cs,
+          id: cs.id,
+          skillName: cs.skill?.skillName || cs.skill?.name || "Unknown Skill",
+          proficiencyLevel: cs.proficiencyLevel?.levelName || cs.proficiencyLevel?.name || "",
+          verified: cs.verified || false,
+          yearsOfExperience: cs.yearsOfExperience || 0,
         }));
         setSkills(skillsWithVerification);
+      } else {
+        setSkills([]);
       }
 
       // Determine permission: assigned reviewer or privileged role
