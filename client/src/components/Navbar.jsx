@@ -102,50 +102,27 @@ const Navbar = () => {
   const navigationItems = getNavigationItems();
 
   return (
-    <nav className="fixed top-0 w-screen bg-[var(--primary-50)] text-[var(--secondary-color)] shadow-md h-20 overflow-visible z-50">
-      <div className="container mx-auto flex justify-between items-center h-full">
-        <Link to="/" className="flex items-center space-x-2">
-          <div className="w-2/5 overflow-hidden rounded-lg flex items-center justify-center">
+    <nav className="fixed top-0 w-full bg-white border-b border-gray-200 shadow-sm h-16 z-50">
+      <div className="flex justify-between items-center h-full px-4 lg:px-6">
+        <div className=" overflow-hidden">
+          <Link to="/" className="flex items-center">
             <img
               src={logo}
               alt="HireFlow Logo"
-              className="object-cover object-center scale-110"
+              className="h-32 w-auto object-contain"
             />
-          </div>
-        </Link>
-
-        {/* Navigation Items */}
-        {isAuthenticated && navigationItems.length > 0 && (
-          <div className="hidden md:flex space-x-6">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition duration-200 ${
-                  location.pathname === item.path
-                    ? "bg-[var(--primary-color)] text-white"
-                    : "text-[var(--secondary-color)] hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-        )}
+          </Link>
+        </div>
 
         <div className="flex items-center space-x-4">
           {isAuthenticated ? (
             <>
               <NotificationBell />
-              <div className="flex items-center mr-4">
-                <span className="font-medium">Hi, {userName}</span>
+              <div className="hidden md:flex items-center mr-4">
+                <span className="font-medium text-gray-700">Hi, {userName}</span>
                 {currentUser?.role && (
                   <span
-                    className="ml-2 px-2 py-1 text-xs rounded-full"
-                    style={{
-                      backgroundColor: "var(--primary-50)",
-                      color: "var(--primary-700)",
-                    }}
+                    className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium"
                   >
                     {currentUser.role}
                   </span>
@@ -156,17 +133,17 @@ const Navbar = () => {
                   dispatch(logout());
                   navigate("/login");
                 }}
-                className="px-4 py-2 rounded-lg bg-[var(--primary-color)] hover:bg-[var(--primary-color-dark)] transition duration-200 font-medium"
+                className="px-4 py-2 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 transition duration-200 font-medium border border-transparent hover:border-red-100"
               >
                 Logout
               </button>
             </>
           ) : (
             <>
-              {location.pathname !== "/login" && (
+              {location.pathname !== "/login" && location.pathname !== "/candidate/login" && (
                 <Link
                   to="/login"
-                  className="px-4 py-2 rounded-lg bg-[var(--primary-color)] hover:bg-[var(--primary-color-dark)] transition duration-200 font-medium"
+                  className="px-4 py-2 text-sm rounded-lg text-blue-600 hover:bg-blue-50 transition font-medium"
                 >
                   Login
                 </Link>
@@ -175,7 +152,7 @@ const Navbar = () => {
               {location.pathname !== "/signup" && (
                 <Link
                   to="/signup"
-                  className="px-4 py-2 rounded-lg border-2 bg-[var(--primary-color)] border-white/30 hover:bg-[var(--primary-color-dark)] transition duration-200 font-medium"
+                  className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition font-medium"
                 >
                   Sign Up
                 </Link>

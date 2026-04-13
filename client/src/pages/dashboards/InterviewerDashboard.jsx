@@ -153,57 +153,75 @@ const InterviewerDashboard = () => {
           </div>
         </div>
 
-        {/* Upcoming Interviews */}
+        {/* Task Center */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <h2 className="text-xl font-bold mb-4">Upcoming Interviews</h2>
-          {upcomingInterviews.length > 0 ? (
-            <div className="space-y-3">
-              {upcomingInterviews.map((interview) => (
-                <div
-                  key={interview.id}
-                  className="flex items-center justify-between border-b pb-3"
-                >
+          <div className="flex items-center justify-between mb-6 border-b pb-4">
+            <h2 className="text-xl font-bold flex items-center">
+              <svg className="w-6 h-6 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+              My Task Center
+            </h2>
+            <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {stats.pendingFeedback} Action(s) Required
+            </span>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Today's Schedule</h3>
+              {upcomingInterviews.length > 0 ? (
+                <div className="grid gap-3">
+                  {upcomingInterviews.map((interview) => (
+                    <div
+                      key={interview.id}
+                      className="flex items-center justify-between border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors bg-gray-50"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="bg-white p-2 border rounded-md text-center min-w-[60px]">
+                          <span className="block text-xs text-gray-500">{new Date(interview.scheduledDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{interview.candidateName}</p>
+                          <p className="text-sm text-gray-500">{interview.position}</p>
+                        </div>
+                      </div>
+                      <Link
+                        to={`/interviews/${interview.id}`}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition shadow-sm"
+                      >
+                        Join / Start
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                  <p className="text-gray-500 text-sm">No interviews scheduled for today.</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3">Pending Feedback</h3>
+              {stats.pendingFeedback > 0 ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex justify-between items-center">
                   <div>
-                    <p className="font-medium">{interview.candidateName}</p>
-                    <p className="text-sm text-gray-500">
-                      {interview.position}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {interview.scheduledDate}
-                    </p>
+                    <h4 className="font-medium text-red-800">You have {stats.pendingFeedback} interview(s) missing feedback</h4>
+                    <p className="text-sm text-red-600 mt-1">Please submit your evaluations to unblock the recruitment process.</p>
                   </div>
                   <Link
-                    to={`/interviews/${interview.id}`}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    to="/interviews/my"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition shadow-sm whitespace-nowrap"
                   >
-                    View
+                    Complete Feedback
                   </Link>
                 </div>
-              ))}
+              ) : (
+                <div className="flex items-center text-green-600 bg-green-50 p-3 rounded-lg border border-green-200 text-sm">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                  All caught up! No pending feedback required.
+                </div>
+              )}
             </div>
-          ) : (
-            <p className="text-gray-500">No upcoming interviews</p>
-          )}
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-            <Link
-              to="/interviews/my"
-              className="p-4 border rounded-lg hover:bg-blue-50 transition"
-            >
-              <p className="font-medium">My Interviews</p>
-              <p className="text-sm text-gray-500">View all interviews</p>
-            </Link>
-            <Link
-              to="/interviews/my"
-              className="p-4 border rounded-lg hover:bg-orange-50 transition"
-            >
-              <p className="font-medium">Add Feedback</p>
-              <p className="text-sm text-gray-500">Submit interview feedback</p>
-            </Link>
           </div>
         </div>
       </div>

@@ -39,6 +39,7 @@ import ApplicationDetailsPage from "../pages/applications/ApplicationDetailsPage
 import InterviewsList from "../components/interviews/InterviewsList";
 import InterviewManagement from "../pages/interviews/InterviewManagement";
 import MyInterviewsPage from "../pages/interviews/MyInterviewsPage";
+import OnlineAssessmentsAdmin from "../pages/interviews/OnlineAssessmentsAdmin";
 
 // Documents Pages
 import DocumentsList from "../components/documents/DocumentsList";
@@ -371,6 +372,16 @@ const AppRoutes = () => {
         }
       />
       <Route
+        path="/interviews/assessments"
+        element={
+          <ProtectedRoute
+            allowedRoles={["ADMIN", "SUPER_ADMIN", "HR", "RECRUITER"]}
+          >
+            <OnlineAssessmentsAdmin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/interviews/my"
         element={
           <ProtectedRoute
@@ -429,7 +440,7 @@ const AppRoutes = () => {
         path="/reports"
         element={
           <ProtectedRoute>
-            <ReportsDashboard />
+            <ReportsPage />
           </ProtectedRoute>
         }
       />

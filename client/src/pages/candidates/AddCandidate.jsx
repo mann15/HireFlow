@@ -7,6 +7,7 @@ const AddCandidate = () => {
   const { candidateId } = useParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [entryMode, setEntryMode] = useState("manual");
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -112,26 +113,67 @@ const AddCandidate = () => {
     <div className="min-h-screen bg-gray-50 pt-20">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center mb-8 border-b pb-4">
             <h1 className="text-3xl font-bold text-gray-900">
               Add New Candidate
             </h1>
-            <button
-              onClick={() => navigate("/candidates")}
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition duration-200 font-medium"
-            >
-              Back to Candidates
-            </button>
+            <div className="flex space-x-4">
+              <div className="bg-gray-100 p-1 rounded-lg flex border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('manual')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${entryMode === 'manual' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Manual Entry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEntryMode('bulk')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${entryMode === 'bulk' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Bulk Upload (Excel)
+                </button>
+              </div>
+              <button
+                onClick={() => navigate("/candidates")}
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition duration-200 font-medium text-sm"
+              >
+                Back to List
+              </button>
+            </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {entryMode === 'bulk' ? (
+              <div className="text-center py-12 px-6">
+                <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Upload Excel Spreadsheet</h3>
+                <p className="text-gray-500 mb-8 max-w-md mx-auto">Upload an Excel (.xlsx or .xls) file to bulk import candidates. Ensure your columns match the required format: First Name, Last Name, Email, Phone.</p>
+                
+                <div className="max-w-xl mx-auto border-2 border-dashed border-gray-300 rounded-xl p-8 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer group">
+                  <div className="flex flex-col items-center">
+                    <svg className="w-10 h-10 text-gray-400 group-hover:text-blue-500 mb-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    <p className="text-sm font-medium text-blue-600 group-hover:text-blue-700">Click to browse or drag & drop</p>
+                    <p className="text-xs text-gray-500 mt-1">XLSX, XLS (Max 5MB)</p>
+                  </div>
+                  <input type="file" accept=".xlsx, .xls" className="hidden" />
+                </div>
+                
+                <div className="mt-8">
+                  <a href="#" className="text-sm text-blue-600 hover:text-blue-800 underline">Download Template</a>
+                </div>
+              </div>
+            ) : (
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Personal Information */}
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -412,6 +454,7 @@ const AddCandidate = () => {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       </div>

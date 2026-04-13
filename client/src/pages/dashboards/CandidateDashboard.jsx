@@ -16,6 +16,7 @@ import {
 import api from "../../api/axios";
 import CandidateCVUpload from "../../components/candidates/CandidateCVUpload";
 import AddSkillsModal from "../../components/candidates/AddSkillsModal";
+import ApplicationProgressTracker from "../../components/candidates/ApplicationProgressTracker";
 import { candidateService } from "../../services/candidateService";
 import {
   getMyOffers,
@@ -433,14 +434,9 @@ const CandidateDashboard = () => {
                           {app.status}
                         </span>
                       </div>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600">
-                          Stage:{" "}
-                          <span className="font-medium">
-                            {getStageLabel(app.currentStage)}
-                          </span>
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                      <div className="mt-4 mb-2">
+                        <ApplicationProgressTracker status={app.status} stage={app.currentStage} rejectionReason={app.rejectionReason} />
+                        <p className="text-xs text-gray-400 mt-2 text-right">
                           Applied:{" "}
                           {new Date(app.appliedAt).toLocaleDateString()}
                         </p>
@@ -743,40 +739,9 @@ const CandidateDashboard = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500">
-                          Current Stage
-                        </label>
-                        <p className="mt-1 text-sm text-gray-900">
-                          {getStageLabel(app.currentStage)}
-                        </p>
+                      <div className="md:col-span-2 mt-2 px-4 pb-4 bg-gray-50 rounded-lg border border-gray-100">
+                        <ApplicationProgressTracker status={app.status} stage={app.currentStage} rejectionReason={app.rejectionReason} />
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-500">
-                          Applied Date
-                        </label>
-                        <p className="mt-1 text-sm text-gray-900">
-                          {new Date(app.appliedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    {app.holdReason && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-                        <p className="text-sm text-yellow-800">
-                          <strong>On Hold:</strong> {app.holdReason}
-                        </p>
-                      </div>
-                    )}
-
-                    {app.rejectionReason && (
-                      <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
-                        <p className="text-sm text-red-800">
-                          <strong>Rejected:</strong> {app.rejectionReason}
-                        </p>
-                      </div>
-                    )}
 
                     <div className="flex gap-2">
                       <button
