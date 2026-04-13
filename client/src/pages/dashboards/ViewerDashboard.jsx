@@ -5,6 +5,7 @@ import {
   applicationService,
   reportService,
 } from "../../services/apiService";
+import { POSITION_STATUS } from "../../utils/constants";
 import Loader from "../../components/Loader";
 
 const ViewerDashboard = () => {
@@ -21,27 +22,41 @@ const ViewerDashboard = () => {
     loadDashboardData();
   }, []);
 
+  const unwrapList = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.content)) return value.content;
+    return [];
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [positions, applications] = await Promise.all([
-        positionService.getPositions().catch(() => []),
-        applicationService.getApplications().catch(() => []),
+      const [positionsResult, applicationsResult] = await Promise.allSettled([
+        positionService.getPositions(),
+        applicationService.getApplications(),
       ]);
 
+      const positions = unwrapList(
+        positionsResult.status === "fulfilled" ? positionsResult.value : [],
+      );
+      const applications = unwrapList(
+        applicationsResult.status === "fulfilled"
+          ? applicationsResult.value
+          : [],
+      );
+
       setStats({
-        totalPositions: Array.isArray(positions) ? positions.length : 0,
-        openPositions: Array.isArray(positions)
-          ? positions.filter((p) => p.status === "OPEN").length
-          : 0,
-        totalApplications: Array.isArray(applications)
-          ? applications.length
-          : 0,
-        totalCandidates: Array.isArray(applications)
-          ? new Set(applications.map((a) => a.candidateId)).size
-          : 0,
+        totalPositions: positions.length,
+        openPositions: positions.filter(
+          (position) => position.status === POSITION_STATUS.OPEN,
+        ).length,
+        totalApplications: applications.length,
+        totalCandidates: new Set(
+          applications.map((application) => application.candidateId),
+        ).size,
       });
     } catch (err) {
       console.error("Failed to load viewer dashboard data:", err);

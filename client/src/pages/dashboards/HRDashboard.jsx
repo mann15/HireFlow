@@ -6,6 +6,7 @@ import {
   applicationService,
   interviewService,
 } from "../../services/apiService";
+import { APPLICATION_STATUS, INTERVIEW_STATUS } from "../../utils/constants";
 import Loader from "../../components/Loader";
 
 const HRDashboard = () => {
@@ -22,31 +23,58 @@ const HRDashboard = () => {
     loadDashboardData();
   }, []);
 
+  const unwrapList = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.content)) return value.content;
+    return [];
+  };
+
   const loadDashboardData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [documents, offers, applications, interviews] = await Promise.all([
-        documentService.getPendingDocuments().catch(() => []),
-        offerService.getOffers().catch(() => []),
-        applicationService.getApplications().catch(() => []),
-        interviewService.getInterviews().catch(() => []),
+      const [
+        documentsResult,
+        offersResult,
+        applicationsResult,
+        interviewsResult,
+      ] = await Promise.allSettled([
+        documentService.getPendingDocuments(),
+        offerService.getOffers(),
+        applicationService.getApplications(),
+        interviewService.getMyInterviews(),
       ]);
+
+      const documents = unwrapList(
+        documentsResult.status === "fulfilled" ? documentsResult.value : [],
+      );
+      const offers = unwrapList(
+        offersResult.status === "fulfilled" ? offersResult.value : [],
+      );
+      const applications = unwrapList(
+        applicationsResult.status === "fulfilled"
+          ? applicationsResult.value
+          : [],
+      );
+      const interviews = unwrapList(
+        interviewsResult.status === "fulfilled" ? interviewsResult.value : [],
+      );
 
       setStats({
         pendingDocuments: Array.isArray(documents)
-          ? documents.filter((d) => d.status === "PENDING").length
+          ? documents.filter((document) => document.status === "PENDING").length
           : 0,
         pendingOffers: Array.isArray(offers)
-          ? offers.filter((o) => o.status === "PENDING").length
+          ? offers.filter((offer) => offer.status === "PENDING").length
           : 0,
-        totalApplications: Array.isArray(applications)
-          ? applications.length
-          : 0,
-        scheduledInterviews: Array.isArray(interviews)
-          ? interviews.filter((i) => i.status === "SCHEDULED").length
-          : 0,
+        totalApplications: applications.length,
+        scheduledInterviews: interviews.filter(
+          (interview) =>
+            interview.status === INTERVIEW_STATUS.SCHEDULED ||
+            interview.status === INTERVIEW_STATUS.RESCHEDULED,
+        ).length,
       });
     } catch (err) {
       console.error("Failed to load HR dashboard data:", err);

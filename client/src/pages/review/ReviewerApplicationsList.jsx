@@ -3,16 +3,75 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchApplications } from "../../redux/thunks/applicationThunks";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
+import { reviewService, applicationService } from "../../services/apiService";
+
+const isPendingReviewApplication = (application) => {
+  const status = application?.status;
+  const currentStage = application?.currentStage;
+
+  return (
+    status === "APPLIED" ||
+    status === "SCREENING" ||
+    status === "SCREENING_PENDING" ||
+    currentStage?.includes("SCREENING") ||
+    currentStage?.includes("REVIEW")
+  );
+};
 
 const ReviewerApplicationsList = () => {
   const dispatch = useDispatch();
   const { applications, loading } = useSelector((state) => state.application);
+  const { currentUser } = useSelector((state) => state.user);
   const [activeTab, setActiveTab] = useState("pending");
 
   useEffect(() => {
-    // Fetch all applications for reviewers
-    dispatch(fetchApplications({}));
-  }, [dispatch]);
+    const loadApplications = async () => {
+      const role = String(
+        typeof currentUser?.role === "object"
+          ? currentUser?.role?.roleName || currentUser?.role?.name
+          : currentUser?.role || currentUser?.roleName || "",
+      )
+        .replace(/^ROLE_/, "")
+        .toUpperCase();
+
+      if (role === "REVIEWER" && currentUser) {
+        const reviewerId =
+          currentUser.userId || currentUser.id || currentUser?.user?.id;
+        const assignments = await reviewService
+          .getPositionsByReviewer(reviewerId)
+          .catch(() => []);
+        const positionIds = assignments
+          .map(
+            (assignment) =>
+              assignment.positionId || assignment.position?.positionId,
+          )
+          .filter(Boolean);
+
+        const lists = await Promise.all(
+          positionIds.map((positionId) =>
+            applicationService.getApplications({ positionId }).catch(() => []),
+          ),
+        );
+
+        const uniqueApplications = new Map();
+        lists.flat().forEach((application) => {
+          if (application?.applicationId != null) {
+            uniqueApplications.set(application.applicationId, application);
+          }
+        });
+
+        dispatch({
+          type: "application/setApplications",
+          payload: Array.from(uniqueApplications.values()),
+        });
+        return;
+      }
+
+      dispatch(fetchApplications({}));
+    };
+
+    loadApplications();
+  }, [dispatch, currentUser]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -31,12 +90,7 @@ const ReviewerApplicationsList = () => {
   }
 
   // Filter pending screening applications
-  const pendingApplications = applications.filter(
-    (app) =>
-      app.status === "SCREENING" ||
-      app.status === "SCREENING_PENDING" ||
-      app.currentStage?.includes("SCREENING")
-  );
+  const pendingApplications = applications.filter(isPendingReviewApplication);
 
   // Filter reviewed applications (those that have moved past screening)
   const reviewedApplications = applications.filter(
@@ -45,7 +99,7 @@ const ReviewerApplicationsList = () => {
       app.status === "SELECTED" ||
       app.status === "REJECTED" ||
       app.status === "ON_HOLD" ||
-      app.status === "WITHDRAWN"
+      app.status === "WITHDRAWN",
   );
 
   const displayApplications =
@@ -185,7 +239,7 @@ const ReviewerApplicationsList = () => {
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            app.status
+                            app.status,
                           )}`}
                         >
                           {app.status}

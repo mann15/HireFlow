@@ -14,6 +14,8 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
 
     Optional<Candidate> findByEmail(String email);
 
+    Optional<Candidate> findByUser_UserId(Long userId);
+
     List<Candidate> findByIsActiveTrue();
 
     List<Candidate> findByCurrentLocationContainingIgnoreCase(String location);

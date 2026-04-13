@@ -9,8 +9,21 @@ const initialState = {
   authCheckComplete: false,
 };
 
+const normalizeRole = (role) => {
+  if (!role) {
+    return role;
+  }
+
+  const rawRole = typeof role === "object" ? role.roleName || role.name : role;
+  return rawRole
+    ? String(rawRole)
+        .replace(/^ROLE_/, "")
+        .toUpperCase()
+    : rawRole;
+};
+
 const normalizeUserPayload = (payload) => {
-  const role = payload?.role ? payload.role.toUpperCase() : payload?.role;
+  const role = normalizeRole(payload?.role || payload?.roleName);
   const id =
     payload?.id ??
     payload?.userId ??
@@ -21,8 +34,12 @@ const normalizeUserPayload = (payload) => {
     payload?.id ??
     payload?.user?.userId ??
     payload?.user?.id;
-  const name = payload?.name || `${payload?.firstName || ""} ${payload?.lastName || ""}`.trim() || payload?.email || "User";
-  return { ...payload, role, id, userId, name };
+  const name =
+    payload?.name ||
+    `${payload?.firstName || ""} ${payload?.lastName || ""}`.trim() ||
+    payload?.email ||
+    "User";
+  return { ...payload, role, roleName: role, id, userId, name };
 };
 
 const userSlice = createSlice({

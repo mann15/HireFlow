@@ -36,6 +36,14 @@ export const INTERVIEW_MODES = {
   HYBRID: "HYBRID",
 };
 
+// Interview Statuses
+export const INTERVIEW_STATUS = {
+  SCHEDULED: "SCHEDULED",
+  COMPLETED: "COMPLETED",
+  CANCELED: "CANCELED",
+  RESCHEDULED: "RESCHEDULED",
+};
+
 // Round Types
 export const ROUND_TYPES = {
   TECHNICAL: "TECHNICAL",

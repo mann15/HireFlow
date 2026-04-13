@@ -2,9 +2,19 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Loader from "./Loader";
 
+const normalizeRole = (role) => {
+  const rawRole =
+    typeof role === "object" ? role?.roleName || role?.name : role;
+  return rawRole
+    ? String(rawRole)
+        .replace(/^ROLE_/, "")
+        .toUpperCase()
+    : rawRole;
+};
+
 // Helper function to get dashboard path based on user role
 const getDashboardPathByRole = (role) => {
-  const roleUpper = role?.toUpperCase();
+  const roleUpper = normalizeRole(role);
 
   switch (roleUpper) {
     case "ADMIN":
@@ -44,7 +54,7 @@ const ProtectedRoute = ({ allowedRoles = [], children }) => {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  const userRole = currentUser?.role?.toUpperCase();
+  const userRole = normalizeRole(currentUser?.role || currentUser?.roleName);
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
     const dashboardPath = getDashboardPathByRole(userRole);

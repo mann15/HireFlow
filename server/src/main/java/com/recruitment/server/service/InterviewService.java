@@ -21,7 +21,6 @@ public class InterviewService {
     private final InterviewRoundRepository interviewRoundRepository;
     private final InterviewPanelRepository interviewPanelRepository;
     private final InterviewFeedbackRepository interviewFeedbackRepository;
-    private final InterviewSkillAssesmentRepository interviewSkillAssesmentRepository;
     private final UserRepository userRepository;
     private final JobRepository jobRepository;
     private final CandidateRepository candidateRepository;
@@ -177,6 +176,60 @@ public class InterviewService {
         }
 
         return scheduledInterviews;
+    }
+
+    public Long resolveBulkRoundId(Long positionId, Long roundId) {
+        if (roundId != null) {
+            return roundId;
+        }
+
+        if (positionId == null) {
+            throw new RuntimeException("positionId is required when roundId is not provided");
+        }
+
+        JobPosition position = jobRepository.findById(positionId)
+                .orElseThrow(() -> new RuntimeException("Position not found"));
+
+        InterviewRound round = interviewRoundRepository.findByPositionOrderByRoundOrder(position)
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No interview rounds defined for this position"));
+
+        return round.getRoundId();
+    }
+
+    public List<Long> resolveApplicationIdsForBulkScheduling(Long positionId, List<Long> candidateIds) {
+        if (positionId == null) {
+            throw new RuntimeException("positionId is required when candidateIds are used for bulk scheduling");
+        }
+        if (candidateIds == null || candidateIds.isEmpty()) {
+            return List.of();
+        }
+
+        JobPosition position = jobRepository.findById(positionId)
+                .orElseThrow(() -> new RuntimeException("Position not found"));
+
+        List<Long> applicationIds = new ArrayList<>();
+        for (Long candidateId : candidateIds) {
+            Candidate candidate = candidateRepository.findById(candidateId)
+                    .orElseThrow(() -> new RuntimeException("Candidate not found: " + candidateId));
+
+            List<JobApplication> applications = jobApplicationRepository.findByCandidateAndPosition(candidate,
+                    position);
+            if (applications.isEmpty()) {
+                throw new RuntimeException("No application found for candidate " + candidateId + " on position "
+                        + positionId);
+            }
+
+            for (JobApplication application : applications) {
+                if (application.getApplicationId() != null
+                        && !applicationIds.contains(application.getApplicationId())) {
+                    applicationIds.add(application.getApplicationId());
+                }
+            }
+        }
+
+        return applicationIds;
     }
 
     public CandidateInterview rescheduleInterview(Long interviewId, LocalDateTime newDate) {
